@@ -1,2 +1,9 @@
 mapbox
 polyline
+jinja2
+matplotlib
+shapely
+figures
+celery
+descartes
+alphashape
