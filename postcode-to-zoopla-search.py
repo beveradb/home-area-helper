@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
-
-from mapbox import Geocoder
-import json
-import urllib.request
-import os
-import polyline
-import webbrowser
-import jinja2
-from shapely.geometry import Point, MultiPoint, Polygon, LineString, mapping
-from shapely.ops import unary_union, nearest_points
 import matplotlib.pyplot as plt
-from descartes import PolygonPatch
-import alphashape
+import multiPolygonTools
+import zooplaTools
+import travelTimeTools
+import mapboxTools
 
 # This script requires you have environment variables set with your personal API keys:
 # MAPBOX_ACCESS_TOKEN from https://docs.mapbox.com/help/how-mapbox-works/access-tokens/
@@ -20,8 +12,8 @@ import alphashape
 
 # Parameters for where to search and what to search for!
 targetLocationAddress = "WC1A 2TH, London, UK"
-maxWalkingTimeMins = "30"
-maxPublicTransportTimeMins = "30"
+maxWalkingTimeMins = "15"
+maxPublicTransportTravelTimeMins = "30"
 rental = True
 sharedAccommodation = False
 minPrice = ""
@@ -30,145 +22,29 @@ minBeds = "1"
 maxBeds = ""
 customKeywords = ""
 
-# Additional Zoopla URL query parameters logic
-rentOrSaleString = "to-rent" if rental else "for-sale"
-sharedAccommodationString = "true" if sharedAccommodation else "false"
-locationString = "UK"
+targetLngLat = mapboxTools.getCentrePointLngLatForAddress(targetLocationAddress)
+walkingIsochroneGeom = mapboxTools.getWalkingIsochroneGeometry(targetLngLat, maxWalkingTimeMins)
+# plt.plot(*Polygon(walkingIsochroneGeom).exterior.xy)
+# mapboxTools.viewPolygonInBrowser(walkingIsochroneGeom)
 
-geocoder = Geocoder()
-targetLocationGeocode = geocoder.forward(targetLocationAddress)
-targetLocationGeocodeFeature = targetLocationGeocode.geojson()['features'][0]
-targetLocationLngLat = targetLocationGeocodeFeature['geometry']['coordinates']
-targetLocationLngLatString = ','.join(map(str, targetLocationLngLat))
-# print("targetLocationLngLatString: " + targetLocationLngLatString)
+publicTransportIsochroneGeom = travelTimeTools.getPublicTransportIsochroneGeometry(targetLngLat, maxPublicTransportTravelTimeMins)
+publicTransportIsochroneGeom = multiPolygonTools.convertMultiToSingleWithJoiningLines(publicTransportIsochroneGeom)
+# plt.plot(*Polygon(publicTransportIsochroneGeom).exterior.xy)
+# mapboxTools.viewPolygonInBrowser(publicTransportIsochroneGeom)
 
-walkingIsochroneURL = "https://api.mapbox.com/isochrone/v1/mapbox/walking/" + targetLocationLngLatString + "?contours_minutes=" + maxWalkingTimeMins + "&access_token=" + os.environ['MAPBOX_ACCESS_TOKEN']
-walkingIsochroneResponseObject = json.load(urllib.request.urlopen(walkingIsochroneURL))
+combinedPolygon = multiPolygonTools.convertMultiToSingleWithJoiningLines([walkingIsochroneGeom, publicTransportIsochroneGeom])
 
-walkingIsochroneGeometry = walkingIsochroneResponseObject['features'][0]['geometry']['coordinates']
-# print("walkingIsochronePolylineUrlencoded: " + walkingIsochronePolylineUrlencoded)
+# Simplify resulting polygon somewhat as URL can't be too long or Zoopla throws HTTP 414 error
+combinedPolygon = combinedPolygon.simplify(0.001)
 
-publicTransportIsochroneRequestHeaders = {
-    'Content-Type': 'application/json',
-    "X-Application-Id": os.environ['TRAVELTIME_APP_ID'],
-    "X-Api-Key": os.environ['TRAVELTIME_API_KEY'],
-}
-publicTransportIsochroneRequestBodyJSON = json.dumps({
-    "departure_searches": [
-        {
-            "id": "first request",
-            "coords": {"lng": targetLocationLngLat[0], "lat": targetLocationLngLat[1]},
-            "transportation": {"type": "public_transport"},
-            "departure_time": "2019-09-30T08:00:00+0000",
-            "travel_time": int(maxPublicTransportTimeMins) * int(60)
-        }
-    ],
-    "arrival_searches": []
-})
-publicTransportIsochroneRequest = urllib.request.Request(
-    'http://api.traveltimeapp.com/v4/time-map', 
-    publicTransportIsochroneRequestBodyJSON.encode("utf-8"),
-    publicTransportIsochroneRequestHeaders
-)
-publicTransportIsochroneResponse = json.load(urllib.request.urlopen(publicTransportIsochroneRequest))
+# Useful when debugging this to find the ideal simplification factor:
+# print("Zoopla URL Length: " + str(len(zooplaTools.buildPropertyQueryURL(rental, minPrice, maxPrice, minBeds, maxBeds, sharedAccommodation, customKeywords, combinedPolygon))))
 
-publicTransportIsochronePointsGeoJSONArray = []
-publicTransportIsochroneShapesGeoJSONArray = []
+# Plot on mapbox leaflet map for easier debugging polygons
+# mapboxTools.viewPolygonInBrowser(combinedPolygon)
 
-publicTransportIsochronePolygonsArray = []
+# Plot on matplotlib graph for further debugging polygons
+# plt.plot(*Polygon(combinedGeom).exterior.xy)
+# plt.show()
 
-# Initialize plot for debugging output
-fig, ax = plt.subplots()
-
-for shapeIndex, singleShape in enumerate(publicTransportIsochroneResponse['results'][0]['shapes']):
-    shapeGeomTuplesArray = []
-    shapeGeomMapboxArray = []
-    
-    for singleShellCoord in singleShape['shell']:
-        coordTuple = (singleShellCoord['lat'], singleShellCoord['lng'])
-        shapeGeomTuplesArray.append(coordTuple)
-        
-        coordMapboxArray = [singleShellCoord['lng'], singleShellCoord['lat']]
-        shapeGeomMapboxArray.append(coordMapboxArray)
-        publicTransportIsochronePointsGeoJSONArray.append(coordMapboxArray)
-
-    shapePolygon = Polygon(shapeGeomMapboxArray)
-    ax.plot(*Polygon(shapeGeomMapboxArray).exterior.xy)
-
-    publicTransportIsochroneShapesGeoJSONArray.append(shapeGeomTuplesArray)
-    publicTransportIsochronePolygonsArray.append(shapePolygon)
-
-
-def convertMultipolygonIntoSinglePolygonWithJoiningLines (multiPolygonToJoin):
-    while multiPolygonToJoin.geom_type == 'MultiPolygon':
-        connectingLinePolygonsArray = []
-
-        for currentPolygonIndex, singlePolygonToConnect in enumerate(multiPolygonToJoin):
-            thisPolygonMultipoint = MultiPoint(singlePolygonToConnect.exterior.coords)
-
-            otherPolygons = [otherSinglePolygon for index, otherSinglePolygon in enumerate(multiPolygonToJoin) if index!=currentPolygonIndex]
-
-            otherPolygons = unary_union(otherPolygons)
-            otherPolygonsCoordsList = []
-            for singleOtherPolygon in otherPolygons:
-                otherPolygonsCoordsList.extend(singleOtherPolygon.exterior.coords)
-            otherPolygonsCoordsList = MultiPoint(otherPolygonsCoordsList)
-
-            nearestConnectingPoints = nearest_points(thisPolygonMultipoint, otherPolygonsCoordsList)
-
-            singleConnectingLinePolygon = LineString([nearestConnectingPoints[0], nearestConnectingPoints[1]]).buffer(0.0001)
-
-            connectingLinePolygonsArray.append(singleConnectingLinePolygon)
-
-            ax.plot(*Polygon(singleConnectingLinePolygon).exterior.xy)
-
-        connectingLinesPolygon = unary_union(connectingLinePolygonsArray)
-        
-        multiPolygonToJoin = unary_union([multiPolygonToJoin, connectingLinesPolygon])
-
-    return multiPolygonToJoin
-
-publicTransportIsochroneMultipolygon = unary_union(publicTransportIsochronePolygonsArray)
-publicTransportIsochroneCombinedPolygon = convertMultipolygonIntoSinglePolygonWithJoiningLines(publicTransportIsochroneMultipolygon)
-
-ax.plot(*Polygon(publicTransportIsochroneCombinedPolygon).exterior.xy)
-
-publicTransportIsochroneCombinedCoords = []
-for coord in list(zip(*publicTransportIsochroneCombinedPolygon.exterior.coords.xy)):
-    publicTransportIsochroneCombinedCoords.append([coord[0], coord[1]])
-
-# Debug polygon output by plotting on Leaflet map in web browser by rendering to an HTML file
-tempMapPlotFilename = "mapbox-polygon-concave.html"
-jinja2.Template(open("mapbox-polygon-template.html").read()).stream(
-     MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN'],
-     MAP_CENTER_POINT_COORD=targetLocationLngLat,
-     MAP_LAYER_GEOJSON=[publicTransportIsochroneCombinedCoords]
- ).dump(tempMapPlotFilename)
-
-webbrowser.open_new("file://" + os.getcwd() + "/" + tempMapPlotFilename)
-
-# Debug polygon output by plotting using matplotlib
-plt.show()
-
-# print(publicTransportIsochroneShapesArray)
-
-# zooplaURL = "https://www.zoopla.co.uk/" + rentOrSaleString + "/map/property/"
-# zooplaURL += locationString + "/?q=" + locationString
-# zooplaURL += "&category=residential"
-# zooplaURL += "&country_code="
-# zooplaURL += "&include_shared_accommodation=" + sharedAccommodationString
-# zooplaURL += "&keywords=" + customKeywords
-# zooplaURL += "&radius=0"
-# zooplaURL += "&added="
-# zooplaURL += "&available_from="
-# zooplaURL += "&price_frequency=per_month"
-# zooplaURL += "&price_min=" + minPrice
-# zooplaURL += "&price_max=" + maxPrice
-# zooplaURL += "&beds_min=" + minBeds
-# zooplaURL += "&beds_max=" + maxBeds
-# zooplaURL += "&include_retirement_homes=true"
-# zooplaURL += "&include_shared_ownership=" + sharedAccommodationString
-# zooplaURL += "&new_homes=include"
-# zooplaURL += "&polyenc=" + urllib.parse.quote(publicTransportIsochronePolyline)
-# zooplaURL += "&search_source=refine"
-# webbrowser.open_new(zooplaURL)
+zooplaTools.launchPropertyQueryInBrowser(rental, minPrice, maxPrice, minBeds, maxBeds, sharedAccommodation, customKeywords, combinedPolygon)
