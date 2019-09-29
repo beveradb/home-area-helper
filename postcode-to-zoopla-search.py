@@ -7,7 +7,7 @@ import os
 import polyline
 import webbrowser
 import jinja2
-from shapely.geometry import Polygon, mapping
+from shapely.geometry import Polygon, LineString, mapping
 from shapely.ops import unary_union
 import matplotlib.pyplot as plt
 from descartes import PolygonPatch
@@ -77,7 +77,9 @@ publicTransportIsochroneResponse = json.load(urllib.request.urlopen(publicTransp
 
 publicTransportIsochronePointsGeoJSONArray = []
 publicTransportIsochroneShapesGeoJSONArray = []
+
 publicTransportIsochronePolygonsArray = []
+publicTransportIsochroneCentroidsArray = []
 
 # Initialize plot
 fig, ax = plt.subplots()
@@ -94,29 +96,42 @@ for shapeIndex, singleShape in enumerate(publicTransportIsochroneResponse['resul
         shapeGeomMapboxArray.append(coordMapboxArray)
         publicTransportIsochronePointsGeoJSONArray.append(coordMapboxArray)
 
+    shapePolygon = Polygon(shapeGeomMapboxArray)
+
     publicTransportIsochroneShapesGeoJSONArray.append(shapeGeomTuplesArray)
-    publicTransportIsochronePolygonsArray.append(Polygon(shapeGeomMapboxArray))
+    publicTransportIsochronePolygonsArray.append(shapePolygon)
+    publicTransportIsochroneCentroidsArray.append(shapePolygon.centroid)
     
     ax.plot(*Polygon(shapeGeomMapboxArray).exterior.xy)
+
+# Buffer the linestring between all centrepoints and plot that
+bufferedConnectingLine = LineString(publicTransportIsochroneCentroidsArray).buffer(0.00001)
 
 # Determine the optimized alpha parameter
 # alpha = alphashape.optimizealpha(publicTransportIsochronePointsGeoJSONArray)
 # print("Optimal alpha calulated: " + str(alpha))
-alpha = 250
+# alpha = 250
 
-# Generate the alpha shape
-publicTransportIsochroneAlpha = alphashape.alphashape(publicTransportIsochronePointsGeoJSONArray, alpha)
+# # Generate the alpha shape
+# publicTransportIsochroneAlpha = alphashape.alphashape(publicTransportIsochronePointsGeoJSONArray, alpha)
 
-# Combine the alpha shape with the combined polygon of all the original desired areas in case the alpha is too extreme
+# # Combine the alpha shape with the combined polygon of all the original desired areas in case the alpha is too extreme
 publicTransportIsochroneMultipolygon = unary_union(publicTransportIsochronePolygonsArray)
-publicTransportIsochroneCombinedMultipolygon = unary_union([publicTransportIsochroneAlpha, publicTransportIsochroneMultipolygon])
+# publicTransportIsochroneCombinedMultipolygon = unary_union([publicTransportIsochroneAlpha, publicTransportIsochroneMultipolygon])
 
-ax.add_patch(PolygonPatch(publicTransportIsochroneCombinedMultipolygon, alpha=.2))
+# ax.add_patch(PolygonPatch(publicTransportIsochroneCombinedMultipolygon, alpha=.2))
+
+publicTransportIsochroneCombinedPolygon = unary_union([publicTransportIsochroneMultipolygon, bufferedConnectingLine])
+ax.add_patch(PolygonPatch(publicTransportIsochroneCombinedPolygon))
 
 publicTransportIsochroneCombinedCoords = []
-for polygon in publicTransportIsochroneCombinedMultipolygon:  # same for multipolygon.geoms
-    for coord in list(zip(*polygon.exterior.coords.xy)):
-        publicTransportIsochroneCombinedCoords.append([coord[0], coord[1]])
+
+for coord in list(zip(*publicTransportIsochroneCombinedPolygon.exterior.coords.xy)):
+    publicTransportIsochroneCombinedCoords.append([coord[0], coord[1]])
+
+# for polygon in publicTransportIsochroneCombinedMultipolygon:
+#     for coord in list(zip(*polygon.exterior.coords.xy)):
+#         publicTransportIsochroneCombinedCoords.append([coord[0], coord[1]])
 
 tempMapPlotFilename = "mapbox-polygon-concave.html"
 jinja2.Template(open("mapbox-polygon-template.html").read()).stream(
