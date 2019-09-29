@@ -42,14 +42,11 @@ targetLocationLngLat = targetLocationGeocodeFeature['geometry']['coordinates']
 targetLocationLngLatString = ','.join(map(str, targetLocationLngLat))
 # print("targetLocationLngLatString: " + targetLocationLngLatString)
 
-# walkingIsochroneURL = "https://api.mapbox.com/isochrone/v1/mapbox/walking/" + targetLocationLngLatString + "?contours_minutes=" + maxWalkingTimeMins + "&access_token=" + os.environ['MAPBOX_ACCESS_TOKEN']
-# # print("walkingIsochroneURL: " + walkingIsochroneURL)
-# walkingIsochroneResponseObject = json.load(urllib.request.urlopen(walkingIsochroneURL))
+walkingIsochroneURL = "https://api.mapbox.com/isochrone/v1/mapbox/walking/" + targetLocationLngLatString + "?contours_minutes=" + maxWalkingTimeMins + "&access_token=" + os.environ['MAPBOX_ACCESS_TOKEN']
+walkingIsochroneResponseObject = json.load(urllib.request.urlopen(walkingIsochroneURL))
 
-# walkingIsochroneGeometry = walkingIsochroneResponseObject['features'][0]['geometry']['coordinates']
-# walkingIsochronePolyline = polyline.encode(walkingIsochroneGeometry, 5, True)
-# walkingIsochronePolylineUrlencoded = urllib.parse.quote(walkingIsochronePolyline)
-# # print("walkingIsochronePolylineUrlencoded: " + walkingIsochronePolylineUrlencoded)
+walkingIsochroneGeometry = walkingIsochroneResponseObject['features'][0]['geometry']['coordinates']
+# print("walkingIsochronePolylineUrlencoded: " + walkingIsochronePolylineUrlencoded)
 
 publicTransportIsochroneRequestHeaders = {
     'Content-Type': 'application/json',
@@ -81,7 +78,7 @@ publicTransportIsochroneShapesGeoJSONArray = []
 publicTransportIsochronePolygonsArray = []
 publicTransportIsochroneCentroidsArray = []
 
-# Initialize plot
+# Initialize plot for debugging output
 fig, ax = plt.subplots()
 
 for shapeIndex, singleShape in enumerate(publicTransportIsochroneResponse['results'][0]['shapes']):
@@ -97,52 +94,43 @@ for shapeIndex, singleShape in enumerate(publicTransportIsochroneResponse['resul
         publicTransportIsochronePointsGeoJSONArray.append(coordMapboxArray)
 
     shapePolygon = Polygon(shapeGeomMapboxArray)
+    # ax.plot(*Polygon(shapeGeomMapboxArray).exterior.xy)
 
     publicTransportIsochroneShapesGeoJSONArray.append(shapeGeomTuplesArray)
     publicTransportIsochronePolygonsArray.append(shapePolygon)
     publicTransportIsochroneCentroidsArray.append(shapePolygon.centroid)
-    
-    ax.plot(*Polygon(shapeGeomMapboxArray).exterior.xy)
+
+publicTransportIsochroneMultipolygon = unary_union(publicTransportIsochronePolygonsArray)
 
 # Buffer the linestring between all centrepoints and plot that
-bufferedConnectingLine = LineString(publicTransportIsochroneCentroidsArray).buffer(0.00001)
+connectingLinePolygonsArray = []
 
-# Determine the optimized alpha parameter
-# alpha = alphashape.optimizealpha(publicTransportIsochronePointsGeoJSONArray)
-# print("Optimal alpha calulated: " + str(alpha))
-# alpha = 250
+for singlePolygonCentroid in publicTransportIsochroneCentroidsArray:
+    singleConnectingLinePolygon = LineString([singlePolygonCentroid, publicTransportIsochroneMultipolygon.centroid]).buffer(0.0001)
+    connectingLinePolygonsArray.append(singleConnectingLinePolygon)
 
-# # Generate the alpha shape
-# publicTransportIsochroneAlpha = alphashape.alphashape(publicTransportIsochronePointsGeoJSONArray, alpha)
+connectingLinesPolygon = unary_union(connectingLinePolygonsArray)
+# ax.plot(*Polygon(connectingLinesPolygon).exterior.xy)
 
-# # Combine the alpha shape with the combined polygon of all the original desired areas in case the alpha is too extreme
-publicTransportIsochroneMultipolygon = unary_union(publicTransportIsochronePolygonsArray)
-# publicTransportIsochroneCombinedMultipolygon = unary_union([publicTransportIsochroneAlpha, publicTransportIsochroneMultipolygon])
-
-# ax.add_patch(PolygonPatch(publicTransportIsochroneCombinedMultipolygon, alpha=.2))
-
-publicTransportIsochroneCombinedPolygon = unary_union([publicTransportIsochroneMultipolygon, bufferedConnectingLine])
-ax.add_patch(PolygonPatch(publicTransportIsochroneCombinedPolygon))
+publicTransportIsochroneCombinedPolygon = unary_union([publicTransportIsochroneMultipolygon, connectingLinesPolygon])
+ax.plot(*Polygon(publicTransportIsochroneCombinedPolygon).exterior.xy)
 
 publicTransportIsochroneCombinedCoords = []
-
 for coord in list(zip(*publicTransportIsochroneCombinedPolygon.exterior.coords.xy)):
     publicTransportIsochroneCombinedCoords.append([coord[0], coord[1]])
 
-# for polygon in publicTransportIsochroneCombinedMultipolygon:
-#     for coord in list(zip(*polygon.exterior.coords.xy)):
-#         publicTransportIsochroneCombinedCoords.append([coord[0], coord[1]])
+# Debug polygon output by plotting on Leaflet map in web browser by rendering to an HTML file
+# tempMapPlotFilename = "mapbox-polygon-concave.html"
+# jinja2.Template(open("mapbox-polygon-template.html").read()).stream(
+#      MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN'],
+#      MAP_CENTER_POINT_COORD=targetLocationLngLat,
+#      MAP_LAYER_GEOJSON=[publicTransportIsochroneCombinedCoords]
+#  ).dump(tempMapPlotFilename)
 
-tempMapPlotFilename = "mapbox-polygon-concave.html"
-jinja2.Template(open("mapbox-polygon-template.html").read()).stream(
-     MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN'],
-     MAP_CENTER_POINT_COORD=targetLocationLngLat,
-     MAP_LAYER_GEOJSON=[publicTransportIsochroneCombinedCoords]
- ).dump(tempMapPlotFilename)
+# webbrowser.open_new("file://" + os.getcwd() + "/" + tempMapPlotFilename)
 
-webbrowser.open_new("file://" + os.getcwd() + "/" + tempMapPlotFilename)
-
-plt.show()
+# Debug polygon output by plotting using matplotlib
+# plt.show()
 
 # print(publicTransportIsochroneShapesArray)
 
