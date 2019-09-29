@@ -76,7 +76,6 @@ publicTransportIsochronePointsGeoJSONArray = []
 publicTransportIsochroneShapesGeoJSONArray = []
 
 publicTransportIsochronePolygonsArray = []
-publicTransportIsochroneCentroidsArray = []
 
 # Initialize plot for debugging output
 fig, ax = plt.subplots()
@@ -98,49 +97,55 @@ for shapeIndex, singleShape in enumerate(publicTransportIsochroneResponse['resul
 
     publicTransportIsochroneShapesGeoJSONArray.append(shapeGeomTuplesArray)
     publicTransportIsochronePolygonsArray.append(shapePolygon)
-    publicTransportIsochroneCentroidsArray.append(shapePolygon.centroid)
 
-print("Original separate polygons count: " + str(len(publicTransportIsochronePolygonsArray)))
-print("Original separate polygon centroids count: " + str(len(publicTransportIsochroneCentroidsArray)))
+
+def convertMultipolygonIntoSinglePolygonWithJoiningLines (multiPolygonToJoin):
+    while multiPolygonToJoin.geom_type == 'MultiPolygon':
+        connectingLinePolygonsArray = []
+
+        for currentPolygonIndex, singlePolygonToConnect in enumerate(multiPolygonToJoin):
+            thisPolygonMultipoint = MultiPoint(singlePolygonToConnect.exterior.coords)
+
+            otherPolygons = [otherSinglePolygon for index, otherSinglePolygon in enumerate(multiPolygonToJoin) if index!=currentPolygonIndex]
+
+            otherPolygons = unary_union(otherPolygons)
+            otherPolygonsCoordsList = []
+            for singleOtherPolygon in otherPolygons:
+                otherPolygonsCoordsList.extend(singleOtherPolygon.exterior.coords)
+            otherPolygonsCoordsList = MultiPoint(otherPolygonsCoordsList)
+
+            nearestConnectingPoints = nearest_points(thisPolygonMultipoint, otherPolygonsCoordsList)
+
+            singleConnectingLinePolygon = LineString([nearestConnectingPoints[0], nearestConnectingPoints[1]]).buffer(0.0001)
+
+            connectingLinePolygonsArray.append(singleConnectingLinePolygon)
+
+            ax.plot(*Polygon(singleConnectingLinePolygon).exterior.xy)
+
+        connectingLinesPolygon = unary_union(connectingLinePolygonsArray)
+        
+        multiPolygonToJoin = unary_union([multiPolygonToJoin, connectingLinesPolygon])
+
+    return multiPolygonToJoin
 
 publicTransportIsochroneMultipolygon = unary_union(publicTransportIsochronePolygonsArray)
+publicTransportIsochroneCombinedPolygon = convertMultipolygonIntoSinglePolygonWithJoiningLines(publicTransportIsochroneMultipolygon)
 
-# Buffer the linestring between all centrepoints to a single central point
-connectingLinePolygonsArray = []
+ax.plot(*Polygon(publicTransportIsochroneCombinedPolygon).exterior.xy)
 
-for singlePolygonCentroid in publicTransportIsochroneCentroidsArray:
-
-    otherCentroids = publicTransportIsochroneCentroidsArray.copy()
-    while singlePolygonCentroid in otherCentroids: otherCentroids.remove(singlePolygonCentroid)
-
-    nearestCentroids = nearest_points(singlePolygonCentroid, MultiPoint(otherCentroids))
-
-    singleConnectingLinePolygon = LineString([singlePolygonCentroid, nearestCentroids[1]]).buffer(0.0001)
-
-    connectingLinePolygonsArray.append(singleConnectingLinePolygon)
-
-    ax.plot(*Polygon(singleConnectingLinePolygon).exterior.xy)
-
-print("Connecting line polygons count: " + str(len(connectingLinePolygonsArray)))
-connectingLinesPolygon = unary_union(connectingLinePolygonsArray)
-# ax.plot(*Polygon(connectingLinesPolygon).exterior.xy)
-
-publicTransportIsochroneCombinedPolygon = unary_union([publicTransportIsochroneMultipolygon, connectingLinesPolygon])
-# ax.plot(*Polygon(publicTransportIsochroneCombinedPolygon).exterior.xy)
-
-# publicTransportIsochroneCombinedCoords = []
-# for coord in list(zip(*publicTransportIsochroneCombinedPolygon.exterior.coords.xy)):
-#     publicTransportIsochroneCombinedCoords.append([coord[0], coord[1]])
+publicTransportIsochroneCombinedCoords = []
+for coord in list(zip(*publicTransportIsochroneCombinedPolygon.exterior.coords.xy)):
+    publicTransportIsochroneCombinedCoords.append([coord[0], coord[1]])
 
 # Debug polygon output by plotting on Leaflet map in web browser by rendering to an HTML file
-# tempMapPlotFilename = "mapbox-polygon-concave.html"
-# jinja2.Template(open("mapbox-polygon-template.html").read()).stream(
-#      MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN'],
-#      MAP_CENTER_POINT_COORD=targetLocationLngLat,
-#      MAP_LAYER_GEOJSON=[publicTransportIsochroneCombinedCoords]
-#  ).dump(tempMapPlotFilename)
+tempMapPlotFilename = "mapbox-polygon-concave.html"
+jinja2.Template(open("mapbox-polygon-template.html").read()).stream(
+     MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN'],
+     MAP_CENTER_POINT_COORD=targetLocationLngLat,
+     MAP_LAYER_GEOJSON=[publicTransportIsochroneCombinedCoords]
+ ).dump(tempMapPlotFilename)
 
-# webbrowser.open_new("file://" + os.getcwd() + "/" + tempMapPlotFilename)
+webbrowser.open_new("file://" + os.getcwd() + "/" + tempMapPlotFilename)
 
 # Debug polygon output by plotting using matplotlib
 plt.show()
