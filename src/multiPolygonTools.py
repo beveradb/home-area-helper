@@ -4,7 +4,10 @@ from shapely.ops import unary_union, nearest_points
 
 def convertMultiToSingleWithJoiningLines(multiPolygonToJoin):
     if type(multiPolygonToJoin) == list:
-        polygonsList = [Polygon(singlePolygonList) for singlePolygonList in multiPolygonToJoin]
+        if type(multiPolygonToJoin[0]) is not Polygon:
+            polygonsList = [Polygon(singlePolygonList) for singlePolygonList in multiPolygonToJoin]
+        else:
+            polygonsList = multiPolygonToJoin
         multiPolygonToJoin = unary_union(polygonsList)
 
     while multiPolygonToJoin.geom_type == 'MultiPolygon':
