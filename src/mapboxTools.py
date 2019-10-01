@@ -29,20 +29,23 @@ def getWalkingIsochroneGeometry(targetLngLat, maxWalkingTimeMins):
 def viewPolygonInBrowser(singlePolygon):
     if type(singlePolygon) is not Polygon: singlePolygon = Polygon(singlePolygon)
     
-    # Debug polygon object by plotting on Leaflet map in web browser by rendering to an HTML file
-    singlePolygonCoords = []
-    for coord in list(zip(*singlePolygon.exterior.coords.xy)):
-        singlePolygonCoords.append([coord[0], coord[1]])
+    singlePolygonExterior = singlePolygon.exterior
+    
+    if hasattr(singlePolygonExterior, 'coords'):
+        # Debug polygon object by plotting on Leaflet map in web browser by rendering to an HTML file
+        singlePolygonCoords = []
+        for coord in list(zip(*singlePolygonExterior.coords.xy)):
+            singlePolygonCoords.append([coord[0], coord[1]])
 
-    singlePolygonRepPoint = singlePolygon.representative_point()
+        singlePolygonRepPoint = singlePolygon.representative_point()
 
-    tempMapPlotFilename = "mapbox-polygon-temp.html"
-    jinja2.Template(open("src/mapbox-polygon-template.html").read()).stream(
-         MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN'],
-         MAP_CENTER_POINT_COORD="[" + str(singlePolygonRepPoint.x) + "," + str(singlePolygonRepPoint.y) + "]",
-         MAP_LAYER_GEOJSON=[singlePolygonCoords]
-     ).dump(tempMapPlotFilename)
+        tempMapPlotFilename = "mapbox-polygon-temp.html"
+        jinja2.Template(open("src/mapbox-polygon-template.html").read()).stream(
+            MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN'],
+            MAP_CENTER_POINT_COORD="[" + str(singlePolygonRepPoint.x) + "," + str(singlePolygonRepPoint.y) + "]",
+            MAP_LAYER_GEOJSON=[singlePolygonCoords]
+        ).dump(tempMapPlotFilename)
 
-    webbrowser.open_new("file://" + os.getcwd() + "/" + tempMapPlotFilename)
-    time.sleep(3)
-    os.remove(tempMapPlotFilename)
+        webbrowser.open_new("file://" + os.getcwd() + "/" + tempMapPlotFilename)
+        # time.sleep(3)
+        # os.remove(tempMapPlotFilename)

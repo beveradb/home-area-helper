@@ -8,3 +8,4 @@ celery
 fiona
 descartes
 pyproj
+geopy
