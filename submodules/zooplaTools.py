@@ -4,6 +4,9 @@ import webbrowser
 import polyline
 
 def launchPropertyQueryInBrowser(rental, minPrice, maxPrice, minBeds, maxBeds, sharedAccommodation, customKeywords, areaPolygon):
+    # Useful when debugging this to find the ideal simplification factor:
+    # print("Zoopla URL Length: " + str(len(zooplaTools.buildPropertyQueryURL(rental, minPrice, maxPrice, minBeds, maxBeds, sharedAccommodation, customKeywords, combinedIntersectionPolygon))))
+
     zooplaURL = buildPropertyQueryURL(rental, minPrice, maxPrice, minBeds, maxBeds, sharedAccommodation, customKeywords, areaPolygon)
     webbrowser.open_new(zooplaURL)
 

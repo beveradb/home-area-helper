@@ -7,7 +7,7 @@ from functools import partial
 import pyproj
 import fiona
 import itertools
-from src import multiPolygonTools
+from submodules import multiPolygonTools
 
 def getPolygonForLeastDeprivedZonesEngland(minimumDeprivationRank):
     # Metadata as per https://www.arcgis.com/home/item.html?id=5e1c399d787e48c0902e5fe4fc1ccfe3

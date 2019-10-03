@@ -17,7 +17,7 @@ def getCentrePointLngLatForAddress(addressString):
 def getWalkingIsochroneGeometry(targetLngLat, maxWalkingTimeMins):
     walkingIsochroneURL = "https://api.mapbox.com/isochrone/v1/mapbox/walking/"
     walkingIsochroneURL += str(targetLngLat[0])+","+str(targetLngLat[1])
-    walkingIsochroneURL +="?contours_minutes=" + maxWalkingTimeMins
+    walkingIsochroneURL +="?contours_minutes=" + str(maxWalkingTimeMins)
     walkingIsochroneURL +="&access_token=" + os.environ['MAPBOX_ACCESS_TOKEN']
 
     walkingIsochroneResponseObject = json.load(
