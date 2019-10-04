@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-import os
 import json
-import time
+import os
 import urllib.request
 import webbrowser
+
 import jinja2
-from shapely.geometry import Polygon
 from mapbox import Geocoder
+from shapely.geometry import Polygon
+
 
 def getCentrePointLngLatForAddress(addressString):
     geocoder = Geocoder()
@@ -14,11 +15,12 @@ def getCentrePointLngLatForAddress(addressString):
     targetLocationGeocodeFeature = targetLocationGeocode.geojson()['features'][0]
     return targetLocationGeocodeFeature['geometry']['coordinates']
 
+
 def getWalkingIsochroneGeometry(targetLngLat, maxWalkingTimeMins):
     walkingIsochroneURL = "https://api.mapbox.com/isochrone/v1/mapbox/walking/"
-    walkingIsochroneURL += str(targetLngLat[0])+","+str(targetLngLat[1])
-    walkingIsochroneURL +="?contours_minutes=" + str(maxWalkingTimeMins)
-    walkingIsochroneURL +="&access_token=" + os.environ['MAPBOX_ACCESS_TOKEN']
+    walkingIsochroneURL += str(targetLngLat[0]) + "," + str(targetLngLat[1])
+    walkingIsochroneURL += "?contours_minutes=" + str(maxWalkingTimeMins)
+    walkingIsochroneURL += "&access_token=" + os.environ['MAPBOX_ACCESS_TOKEN']
 
     walkingIsochroneResponseObject = json.load(
         urllib.request.urlopen(walkingIsochroneURL)
@@ -26,11 +28,12 @@ def getWalkingIsochroneGeometry(targetLngLat, maxWalkingTimeMins):
 
     return walkingIsochroneResponseObject['features'][0]['geometry']['coordinates']
 
+
 def viewPolygonInBrowser(singlePolygon):
     if type(singlePolygon) is not Polygon: singlePolygon = Polygon(singlePolygon)
-    
+
     singlePolygonExterior = singlePolygon.exterior
-    
+
     if hasattr(singlePolygonExterior, 'coords'):
         # Debug polygon object by plotting on Leaflet map in web browser by rendering to an HTML file
         singlePolygonCoords = []

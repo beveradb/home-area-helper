@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import os
 import json
+import os
 import urllib.request
+
 
 def getPublicTransportIsochroneGeometry(targetLngLat, maxPublicTransportTravelTimeMins):
     publicTransportIsochroneRequestHeaders = {
@@ -24,7 +25,7 @@ def getPublicTransportIsochroneGeometry(targetLngLat, maxPublicTransportTravelTi
     })
 
     publicTransportIsochroneRequest = urllib.request.Request(
-        'http://api.traveltimeapp.com/v4/time-map', 
+        'http://api.traveltimeapp.com/v4/time-map',
         publicTransportIsochroneRequestBodyJSON.encode("utf-8"),
         publicTransportIsochroneRequestHeaders
     )
@@ -37,13 +38,14 @@ def getPublicTransportIsochroneGeometry(targetLngLat, maxPublicTransportTravelTi
 
     return normaliseTravelTimeShapes(publicTransportIsochroneShapes)
 
+
 def normaliseTravelTimeShapes(shapesList):
     shapesListNormalised = []
 
     for singleShape in shapesList:
         shapeCoordsArray = []
-        
-        for singleShellCoord in singleShape['shell']:        
+
+        for singleShellCoord in singleShape['shell']:
             shapeCoordsArray.append([singleShellCoord['lng'], singleShellCoord['lat']])
 
         shapesListNormalised.append(shapeCoordsArray)

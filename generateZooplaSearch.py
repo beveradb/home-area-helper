@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import matplotlib.pyplot as plt
-from submodules import mapboxTools
 from submodules import zooplaTools
 from submodules import targetLocationTools
 
@@ -12,13 +11,13 @@ from submodules import targetLocationTools
 # Parameters for where to search and what to search for!
 targetLocationAddress = "WC1A 2TH, London, UK"
 # targetLocationAddress = "69 Morrison Street, Edinburgh, UK"
-#targetLocationAddress1 = "23 Turner St, Manchester, M4 1DY"
-#targetLocationAddress2 = "Eildon House, Newtown St Boswells, Melrose, TD6 0PP"
+# targetLocationAddress1 = "23 Turner St, Manchester, M4 1DY"
+# targetLocationAddress2 = "Eildon House, Newtown St Boswells, Melrose, TD6 0PP"
 
 maxWalkingTimeMins = 15
 maxPublicTransportTravelTimeMins = 20
 minDeprivationScore = 5
-searchRadiusLimitMiles = 5
+searchRadiusLimitMiles = 3
 
 rental = True
 sharedAccommodation = False
@@ -39,17 +38,15 @@ intersectionResults = targetLocationTools.getTargetLocationPolygons(
     minDeprivationScore
 )
 
+print(zooplaTools.launchPropertyQueryInBrowser(
+    rental, minPrice, maxPrice, minBeds, maxBeds, sharedAccommodation, customKeywords,
+    intersectionResults['combinedIntersection']['polygon']
+))
+
 if plotDebugGraph:
     for key, value in intersectionResults.items():
         if 'polygon' in value:
             plt.plot(*value['polygon'].exterior.xy, label=value['label'])
+    plt.plot(*intersectionResults['targetLngLat'], marker='*', label='Target: '+targetLocationAddress)
     plt.legend()
     plt.show()
-
-# Useful when debugging this to find the ideal simplification factor:
-# print("Zoopla URL Length: " + str(len()))
-
-print(zooplaTools.buildPropertyQueryURL(
-    rental, minPrice, maxPrice, minBeds, maxBeds, sharedAccommodation, customKeywords,
-    intersectionResults['combinedIntersection']['polygon']
-))
