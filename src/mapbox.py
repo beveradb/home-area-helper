@@ -45,7 +45,7 @@ def view_polygon_in_browser(single_polygon):
         single_poly_rep = single_polygon.representative_point()
 
         temp_map_plot_filename = "mapbox-polygon-temp.html"
-        jinja2.Template(open("src/mapbox-polygon-template.html").read()).stream(
+        jinja2.Template(open("templates/single-polygon.html").read()).stream(
             MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN'],
             MAP_CENTER_POINT_COORD="[" + str(single_poly_rep.x) + "," + str(single_poly_rep.y) + "]",
             MAP_LAYER_GEOJSON=[single_polygon_coords]

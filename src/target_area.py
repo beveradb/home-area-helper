@@ -8,7 +8,7 @@ from src import multi_polygons
 from src import travel_time
 
 
-def get_target_location_polygons(
+def get_target_area_polygons(
         target_location_address: str,
         search_radius_limit_miles: int,
         max_walking_time_mins: int,
