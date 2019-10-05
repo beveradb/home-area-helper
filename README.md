@@ -17,10 +17,10 @@ This should help you generate a meaningful search area which factors in your per
 
 It'll generate shapes for each of those filters based on the parameters you specify, then find the intersection of all of those shapes, representing the area you want to search in:
 
-![alt text](https://raw.githubusercontent.com/beveradb/home-hunting-assistance/master/screenshots/polygon-debugging.png "Debug Output")
+![alt text](https://raw.githubusercontent.com/beveradb/home-area-helper/master/screenshots/polygon-debugging.png "Debug Output")
 
 It'll then produce an encoded URL which is compatible with the leading property search site in the UK, Zoopla, and launch that in a web browser for your convenience:
 
-![alt text](https://github.com/beveradb/home-hunting-assistance/blob/master/screenshots/end-result-zoopla.png?raw=true "Zoopla Output")
+![alt text](https://github.com/beveradb/home-area-helper/blob/master/screenshots/end-result-zoopla.png?raw=true "Zoopla Output")
 
 You can then set up an alert for that search on Zoopla's site so you get an immediate notification whenever a new property comes on the market in your budget in that area! 
