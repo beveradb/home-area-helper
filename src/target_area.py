@@ -12,6 +12,7 @@ def get_target_area_polygons(
         target_location_address: str,
         max_walking_time_mins: int,
         max_public_transport_travel_time_mins: int,
+        max_driving_time_mins: int,
         min_deprivation_score: int
 ) -> dict:
     return_object = {}
@@ -26,16 +27,18 @@ def get_target_area_polygons(
 
     travel_isochrones_to_combine = []
 
-    combined_iso_poly_label = []
-
     if max_walking_time_mins > 0:
-        walking_isochrone_geom = mapbox.get_walking_isochrone_geometry(
-            target_lng_lat, max_walking_time_mins
+        walking_isochrone_geom = mapbox.get_isochrone_geometry(
+            target_lng_lat, max_walking_time_mins, "walking"
         )
 
         walking_isochrone_polygon = Polygon(walking_isochrone_geom)
         travel_isochrones_to_combine.append(walking_isochrone_polygon)
-        combined_iso_poly_label.append(str(max_walking_time_mins) + 'min Walk')
+
+        return_object['walkingIsochrone'] = {
+            'label': str(max_walking_time_mins) + 'min Walk',
+            'polygon': walking_isochrone_polygon
+        }
 
     if max_public_transport_travel_time_mins > 0:
         pt_iso_geom = travel_time.get_public_transport_isochrone_geometry(
@@ -47,17 +50,30 @@ def get_target_area_polygons(
         public_transport_isochrone_polygon = Polygon(pt_iso_geom)
         travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
 
-        combined_iso_poly_label.append(
-            str(max_public_transport_travel_time_mins) + 'min Public Transport')
+        return_object['publicTransportIsochrone'] = {
+            'label': str(max_public_transport_travel_time_mins) + 'min Public Transport',
+            'polygon': public_transport_isochrone_polygon
+        }
 
-    combined_iso_poly = travel_isochrones_to_combine[0]
+    if max_driving_time_mins > 0:
+        driving_isochrone_geom = mapbox.get_isochrone_geometry(
+            target_lng_lat, max_driving_time_mins, "driving"
+        )
 
-    if len(travel_isochrones_to_combine) > 1:
-        combined_iso_poly = multi_polygons.convert_multi_to_single_with_joining_lines(
-            [travel_isochrones_to_combine[0], travel_isochrones_to_combine[1]])
+        driving_isochrone_polygon = Polygon(driving_isochrone_geom)
+        travel_isochrones_to_combine.append(driving_isochrone_polygon)
+
+        return_object['drivingIsochrone'] = {
+            'label': str(max_driving_time_mins) + 'min Drive',
+            'polygon': driving_isochrone_polygon
+        }
+
+    combined_iso_poly = multi_polygons.convert_multi_to_single_with_joining_lines(
+        travel_isochrones_to_combine
+    )
 
     return_object['combinedTransportIsochrone'] = {
-        'label': ' / '.join(combined_iso_poly_label),
+        'label': 'Combined Transport',
         'polygon': combined_iso_poly
     }
 

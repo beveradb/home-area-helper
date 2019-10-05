@@ -23,18 +23,20 @@ def index():
     )
 
 
-@app.route('/target_area/<string:target>/<int:walking>/<int:transport>/<int:deprivation>')
+@app.route('/target_area/<string:target>/<int:walking>/<int:pubtrans>/<int:driving>/<int:deprivation>')
 def target_area_json(
         target: str,
         walking: int,
-        transport: int,
+        pubtrans: int,
+        driving: int,
         deprivation: int
 ):
     polygon_results = target_area.get_target_area_polygons(
         target_location_address=target,
         min_deprivation_score=deprivation,
         max_walking_time_mins=walking,
-        max_public_transport_travel_time_mins=transport
+        max_public_transport_travel_time_mins=pubtrans,
+        max_driving_time_mins=driving
     )
     for key, value in polygon_results.items():
         if 'polygon' in value:
@@ -45,4 +47,3 @@ def target_area_json(
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=80, use_evalex=False)
-    webbrowser.open_new("http://127.0.0.1")
