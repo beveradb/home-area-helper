@@ -82,12 +82,16 @@ def convert_multi_to_single_with_joining_lines(multi_polygon_to_join):
 
 
 def convert_list_to_multi_polygon(multi_polygon_list):
+    # If the object passed in isn't a list, assume it's already a MultiPolygon and do nothing for easier recursion
     if type(multi_polygon_list) == list and len(multi_polygon_list) > 0:
-        if type(multi_polygon_list[0]) is not Polygon:
-            polygons_list = [Polygon(singlePolygonList) for singlePolygonList in multi_polygon_list]
-        else:
-            polygons_list = multi_polygon_list
+        # For each polygon in the list, ensure it is actually a Polygon object and buffer to remove self-intersections
+        refined_polygons_list = []
+        for single_polygon in multi_polygon_list:
+            if type(single_polygon) is not Polygon:
+                single_polygon = Polygon(single_polygon)
+            refined_polygons_list.append(single_polygon.buffer(0.0001))
 
-        multi_polygon_list = shapely.ops.unary_union(polygons_list)
+        # Once we have a buffered list of Polygons, combine into a single Polygon or MultiPolygon if there are gaps
+        multi_polygon_list = shapely.ops.unary_union(refined_polygons_list)
 
     return multi_polygon_list

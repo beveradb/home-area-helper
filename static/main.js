@@ -24,29 +24,79 @@ function map_loaded(map) {
         e.stopPropagation();
         e.preventDefault();
 
+        let formInputs = $('#generateSearchAreaForm input');
+        let formValid = !formInputs.map(function (key, elem) {
+            return elem.checkValidity();
+        }).get().some(function (value) {
+            return value === false;
+        });
+
+        if (formValid === false) {
+            formInputs.each(function (key, elem) {
+                return elem.reportValidity();
+            });
+            return false;
+        }
+
         $("#generateButton").hide();
         $('#generateButtonLoading').show();
-        clear_map(window.mainMap.map);
 
-        $('#generateSearchAreaForm input').each(function (i, elem) {
+        formInputs.each(function (i, elem) {
             localStorage.setItem($(elem).attr('id'), $(elem).val());
         });
 
-        let polygonURL = "/target_area/" + encodeURIComponent($("#targetAddressInput").val());
-        polygonURL += "/" + encodeURIComponent($("#maxWalkingTimeInput").val());
-        polygonURL += "/" + encodeURIComponent($("#maxPublicTransportTimeInput").val());
-        polygonURL += "/" + encodeURIComponent($("#maxDrivingTimeInput").val());
-        polygonURL += "/" + encodeURIComponent($("#minIMDInput").val());
+        generate_and_plot_areas(
+            $("#targetAddressInput").val(),
+            $("#maxWalkingTimeInput").val(),
+            $("#maxPublicTransportTimeInput").val(),
+            $("#maxDrivingTimeInput").val(),
+            $("#minIMDInput").val(),
+            function () {
+                $("#generateButton").show();
+                $('#generateButtonLoading').hide();
+            },
+            function (jqXHR, textStatus) {
+                $('#modalTitle').text("Error");
+                $('#modalBody').html("<iframe class='errorFrame' srcdoc='" + jqXHR.responseText + "'></iframe>");
+                $('#mainModal').modal();
 
-        $.getJSON(polygonURL, function (data) {
-            window.currentPolygonsData = data;
-            plot_polygons(data);
-
-            $("#generateButton").show();
-            $('#generateButtonLoading').hide();
-        });
+                $("#generateButton").show();
+                $('#generateButtonLoading').hide();
+            }
+        );
 
         return false;
+    });
+}
+
+function generate_and_plot_areas(
+    targetAddress,
+    maxWalkingTime,
+    maxPublicTransportTime,
+    maxDrivingTime,
+    minIMDInput,
+    successCallback,
+    errorCallback
+) {
+    clear_map(window.mainMap.map);
+
+    let polygonURL = "/target_area/" + encodeURIComponent(targetAddress);
+    polygonURL += "/" + encodeURIComponent(maxWalkingTime);
+    polygonURL += "/" + encodeURIComponent(maxPublicTransportTime);
+    polygonURL += "/" + encodeURIComponent(maxDrivingTime);
+    polygonURL += "/" + encodeURIComponent(minIMDInput);
+
+    $.getJSON(polygonURL, function (data) {
+        window.currentPolygonsData = data;
+        plot_polygons(data);
+
+        if (successCallback) {
+            successCallback();
+        }
+    }).fail(function (jqXHR, textStatus) {
+        if (errorCallback) {
+            errorCallback(jqXHR, textStatus);
+        }
     });
 }
 
