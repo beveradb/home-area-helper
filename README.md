@@ -1,4 +1,4 @@
-# "Where to rent/buy" helper
+# Home area helper
 
 If you've ever been looking for a property to rent or buy, but:
 - You know what town/city you want to live in, but you're unsure which areas of that city to look in?
