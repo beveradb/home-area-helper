@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 import os
+import webbrowser
 
 from flask import Flask, render_template, jsonify
+from shapely.geometry import mapping
+
+from src import target_area
 
 app = Flask(__name__)
 
@@ -19,22 +23,26 @@ def index():
     )
 
 
-@app.route('/target_area/<string:target>/<int:walking>/<int:transport>/<int:deprivation>/<int:radius>')
-def target_area(
+@app.route('/target_area/<string:target>/<int:walking>/<int:transport>/<int:deprivation>')
+def target_area_json(
         target: str,
         walking: int,
         transport: int,
-        deprivation: int,
-        radius: int
+        deprivation: int
 ):
-    return jsonify(target_area.get_target_area_polygons(
+    polygon_results = target_area.get_target_area_polygons(
         target_location_address=target,
         min_deprivation_score=deprivation,
         max_walking_time_mins=walking,
-        max_public_transport_travel_time_mins=transport,
-        search_radius_limit_miles=radius
-    ))
+        max_public_transport_travel_time_mins=transport
+    )
+    for key, value in polygon_results.items():
+        if 'polygon' in value:
+            polygon_results[key]['polygon'] = mapping(value['polygon'])
+
+    return jsonify(polygon_results)
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=80)
+    app.run(debug=True, host='0.0.0.0', port=80, use_evalex=False)
+    webbrowser.open_new("http://127.0.0.1")

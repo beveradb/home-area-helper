@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from shapely.geometry import Polygon
 import matplotlib.pyplot as plt
+from shapely.geometry import Polygon
 
 from src import deprivation
 from src import mapbox
@@ -10,7 +10,6 @@ from src import travel_time
 
 def get_target_area_polygons(
         target_location_address: str,
-        search_radius_limit_miles: int,
         max_walking_time_mins: int,
         max_public_transport_travel_time_mins: int,
         min_deprivation_score: int
@@ -23,15 +22,6 @@ def get_target_area_polygons(
     return_object['target'] = {
         'label': 'Target: ' + target_location_address,
         'coords': target_lng_lat
-    }
-
-    target_bounding_box = multi_polygons.get_bounding_circle_for_point(
-        target_lng_lat, search_radius_limit_miles
-    )
-
-    return_object['targetBoundingBox'] = {
-        'label': str(search_radius_limit_miles) + ' mile Search Radius',
-        'polygon': target_bounding_box
     }
 
     travel_isochrones_to_combine = []
@@ -69,6 +59,19 @@ def get_target_area_polygons(
     return_object['combinedTransportIsochrone'] = {
         'label': ' / '.join(combined_iso_poly_label),
         'polygon': combined_iso_poly
+    }
+
+    # TODO: Replace hard-coded search radius of 3 miles with calculated value,
+    # using total size of combined_iso_poly
+    search_radius_limit_miles = 3
+    target_bounding_box = multi_polygons.get_bounding_circle_for_point(
+        target_lng_lat, search_radius_limit_miles
+    )
+
+    return_object['targetBoundingBox'] = {
+        'label': str(search_radius_limit_miles) + ' mile Search Radius',
+        'polygon': target_bounding_box,
+        'bounds': target_bounding_box.bounds
     }
 
     imd_filter_limited_polygon = deprivation.get_simplified_clipped_uk_deprivation_polygon(

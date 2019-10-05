@@ -1,17 +1,106 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
     <meta charset='utf-8'/>
     <title>Property Search Area Tool</title>
-    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
-    <script src='{{ url_for('static', filename='main.js') }}'></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+
+    <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'
+          integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'/>
+    <link rel='stylesheet' href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.css'/>
+    <link rel='stylesheet' href='{{ url_for('static', filename='main.css') }}'/>
+
+    <script
+            src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.js'></script>
-    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.css' rel='stylesheet'/>
-    <link href='{{ url_for('static', filename='main.css') }}' rel='stylesheet'/>
+
+    <script src='{{ url_for('static', filename='main.js') }}'></script>
 </head>
 <body>
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <div id="controls" class="col-12 col-md-4">
+            <div class="jumbotron">
+                <h1 class="display-4">Home Area Helper</h1>
+                <p class="lead">Build property search filters/alerts based on target destination walk/bus/drive time and
+                    area deprivation.</p>
+            </div>
+            <form id="generateSearchAreaForm">
+                <div class="form-row">
+                    <div class="form-group col-12">
+                        <label for="targetAddressInput">Target Address</label>
+                        <input type="text" class="form-control" id="targetAddressInput"
+                               aria-describedby="targetAddressHelp"
+                               placeholder="Princes Street, Edinburgh, UK" required>
+                        <small id="targetAddressHelp" class="form-text text-muted">Destination address for travel time
+                            calculations - e.g. workplace, city center, family home</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="maxWalkingTimeInput">Walking</label>
+                        <input type="number" class="form-control" id="maxWalkingTimeInput"
+                               aria-describedby="maxTansportTimeHelp"
+                               placeholder="15" required>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="maxPublicTransportTimeInput">Public Transport</label>
+                        <input type="number" class="form-control" id="maxPublicTransportTimeInput"
+                               aria-describedby="maxTansportTimeHelp"
+                               placeholder="30" required>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="maxDrivingTimeInput">Driving</label>
+                        <input type="number" class="form-control" id="maxDrivingTimeInput"
+                               aria-describedby="maxTansportTimeHelp"
+                               placeholder="0" required>
+                    </div>
+                    <div class="form-group col-12">
+                        <small id="maxTansportTimeHelp" class="form-text text-muted">
+                            Maximum journey time to consider for each method of transport, in minutes.<br/>
+                            If you can't/won't travel by one of these methods, set it to 0 to exclude.<br/>
+                            These are <i>additive</i>, so if you can reach somewhere by any of these it'll be included.
+                        </small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-12">
+                        <label for="minIMDInput">Minimum Deprivation Rank</label>
+                        <input type="number" class="form-control" id="minIMDInput"
+                               aria-describedby="minIMDHelp"
+                               placeholder="5" min="1" max="10" required>
+                        <small id="minIMDHelp" class="form-text text-muted">
+                            Minimum deprivation rank (1-10) to consider, based on
+                            <a href="https://simd.scot" target="_blank">public IMD data</a>.<br/>
+                            1 allows all areas, 10 allows only the top 10% least deprived areas.
+                        </small>
+                    </div>
+                </div>
+                <div class="form-row" id="">
+                    <div class="form-group col-12">
+                        <button type="submit" class="btn btn-primary" id="generateButton">Generate Search Area</button>
 
-<div id='map'></div>
+                        <button type="button" class="btn btn-primary" id="generateButtonLoading" style="display: none;" disabled>
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Working...
+                        </button>
+
+                        <button type="button" class="btn btn-secondary" id="demoButton">Demo</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div id="map-container" class="col-12 col-md-8">
+            <nav id="map-filter-menu"></nav>
+            <div id="map"></div>
+        </div>
+    </div>
+</div>
 <script>
     mapboxgl.accessToken = "{{MAPBOX_ACCESS_TOKEN}}";
     var map = new mapboxgl.Map({
@@ -25,6 +114,5 @@
         map_loaded(map)
     });
 </script>
-
 </body>
 </html>
