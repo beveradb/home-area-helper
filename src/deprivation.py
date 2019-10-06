@@ -43,17 +43,15 @@ def get_polygon_for_least_deprived_zones_uk(minimum_deprivation_rank):
     ))
 
 
-def get_simplified_clipped_uk_deprivation_polygon(min_deprivation_score, target_lng_lat, clip_distance_miles):
-
+def get_simplified_clipped_uk_deprivation_polygon(min_deprivation_score, bounding_poly):
     imd_filter_multi_polygon = get_polygon_for_least_deprived_zones_uk(min_deprivation_score)
     # print("imdFilterMultiPolygons after deprivation filter: " + str(len(imdFilterMultiPolygon)))
 
-    imd_filter_multi_polygon = multi_polygons.filter_uk_multipoly_by_target_radius(imd_filter_multi_polygon,
-                                                                                   target_lng_lat,
-                                                                                   clip_distance_miles)
-    # print("imdFilterMultiPolygons after distance filter: " + str(len(imdFilterMultiPolygon)))
+    imd_filter_multi_polygon = multi_polygons.filter_uk_multipoly_by_bounding_box(imd_filter_multi_polygon,
+                                                                                  bounding_poly)
+    # print("imdFilterMultiPolygons after bounds filter: " + str(len(imdFilterMultiPolygon)))
 
-    imd_filter_multi_polygon = multi_polygons.simplify(imd_filter_multi_polygon, 0.001)
+    imd_filter_multi_polygon = multi_polygons.simplify_multi(imd_filter_multi_polygon, 0.001)
     imd_filter_combined_polygon = multi_polygons.convert_multi_to_single_with_joining_lines(imd_filter_multi_polygon)
 
     u_kto_w_g_s84_project = partial(pyproj.transform, pyproj.Proj(init='epsg:27700'), pyproj.Proj(init='epsg:4326'))

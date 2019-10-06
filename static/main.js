@@ -56,8 +56,10 @@ function map_loaded(map) {
                 $('#generateButtonLoading').hide();
             },
             function (jqXHR, textStatus) {
-                $('#modalTitle').text("Error");
-                $('#modalBody').html("<iframe class='errorFrame' srcdoc='" + jqXHR.responseText + "'></iframe>");
+                $('#modalTitle').text("Server Error");
+                let errorFrame = $("<iframe class='errorFrame'></iframe>");
+                errorFrame.attr('srcdoc', jqXHR.responseText);
+                $('#modalBody').append(errorFrame);
                 $('#mainModal').modal();
 
                 $("#generateButton").show();
@@ -105,21 +107,31 @@ function plot_polygons(polygonResults) {
     let layerColours = ["#e6194B", "#4363d8", "#f58231", "#f032e6", "#469990", "#9A6324", "#800000"];
     let distinctGreen = "#3cb44b";
 
-    plot_polygon(polygonResults, 'walkingIsochrone', layerColours.pop(), 0.3);
-    plot_polygon(polygonResults, 'publicTransportIsochrone', layerColours.pop(), 0.3);
-    plot_polygon(polygonResults, 'drivingIsochrone', layerColours.pop(), 0.3);
-    plot_polygon(polygonResults, 'combinedTransportIsochrone', layerColours.pop(), 0.3);
+    // plot_polygon(polygonResults, 'targetBoundingBox', layerColours.pop(), 0.1, false);
 
-    plot_polygon(polygonResults, 'targetBoundingBox', layerColours.pop(), 0.3);
-    plot_polygon(polygonResults, 'imdFilterLimited', layerColours.pop(), 0.3);
+    plot_polygon(polygonResults, 'walkingIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'publicTransportIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'drivingIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'combinedTransportIsochrone', layerColours.pop(), 0.3, true);
 
-    plot_polygon(polygonResults, 'combinedIntersection', distinctGreen, 0.5);
+    plot_polygon(polygonResults, 'imdFilterLimited', layerColours.pop(), 0.3, true);
 
-    plot_marker(polygonResults['target']['label'], polygonResults['target']['coords']);
+    plot_polygon(polygonResults, 'combinedIntersection', distinctGreen, 0.7, true);
+
+    plot_marker(
+        polygonResults['target']['label'] + polygonResults['target']['coords'],
+        polygonResults['target']['coords']
+    );
 
     $('#map-filter-menu').show();
 
     map.fitBounds(polygonResults['targetBoundingBox']['bounds']);
+    let centerOnce = function (e) {
+        map.panTo(polygonResults['target']['coords']);
+        map.off('moveend', centerOnce);
+    };
+    map.on('moveend', centerOnce);
+
 }
 
 function plot_marker(label, coords) {
@@ -134,7 +146,7 @@ function plot_marker(label, coords) {
     window.mainMap.currentMarkers.push(targetMarker);
 }
 
-function plot_polygon(polygonObject, id, color, opacity) {
+function plot_polygon(polygonObject, id, color, opacity = 0.3, visible = true) {
     if (polygonObject[id] === undefined) {
         return;
     }
@@ -142,10 +154,12 @@ function plot_polygon(polygonObject, id, color, opacity) {
     window.mainMap.currentLayers.push(id);
 
     let menuItem = $(
-        "<a href='#' class='active' style='background-color: " + color + "'>" +
+        "<a href='#' style='background-color: " + color + "'>" +
         polygonObject[id]['label'] +
         "</a>"
     );
+
+    if (visible) menuItem.addClass('active');
 
     menuItem.click(function (e) {
         let visibility = window.mainMap.map.getLayoutProperty(id, 'visibility');
@@ -173,7 +187,7 @@ function plot_polygon(polygonObject, id, color, opacity) {
             }
         },
         'layout': {
-            'visibility': 'visible'
+            'visibility': (visible ? 'visible' : 'none')
         },
         'paint': {
             'fill-color': color,

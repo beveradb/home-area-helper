@@ -77,21 +77,16 @@ def get_target_area_polygons(
         'polygon': combined_iso_poly
     }
 
-    # TODO: Replace hard-coded search radius of 3 miles with calculated value,
-    # using total size of combined_iso_poly
-    search_radius_limit_miles = 3
-    target_bounding_box = multi_polygons.get_bounding_circle_for_point(
-        target_lng_lat, search_radius_limit_miles
-    )
-
+    target_bounding_box_poly = Polygon.from_bounds(*combined_iso_poly.bounds).buffer(0.001)
     return_object['targetBoundingBox'] = {
-        'label': str(search_radius_limit_miles) + ' mile Search Radius',
-        'polygon': target_bounding_box,
-        'bounds': target_bounding_box.bounds
+        'label': 'Bounding Box',
+        'polygon': target_bounding_box_poly,
+        'bounds': target_bounding_box_poly.bounds
     }
 
     imd_filter_limited_polygon = deprivation.get_simplified_clipped_uk_deprivation_polygon(
-        min_deprivation_score, target_lng_lat, search_radius_limit_miles)
+        min_deprivation_score, target_bounding_box_poly
+    )
 
     return_object['imdFilterLimited'] = {
         'label': 'Deprivation Score > ' + str(min_deprivation_score),
