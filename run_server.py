@@ -46,4 +46,5 @@ def target_area_json(
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=3000, use_evalex=False)
+    port = os.environ['PORT'] if 'PORT' in os.environ else 3000
+    app.run(debug=True, host='0.0.0.0', port=port, use_evalex=False)
