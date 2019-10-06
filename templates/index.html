@@ -18,6 +18,7 @@
             integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
             crossorigin="anonymous"></script>
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mapbox/polyline@1.1.0/src/polyline.min.js"></script>
 
     <script src='{{ url_for('static', filename='main.js') }}'></script>
 </head>
@@ -84,34 +85,135 @@
                 </div>
                 <div class="form-row" id="">
                     <div class="form-group col-12">
-                        <button type="button" class="btn btn-primary" id="generateButton">Generate Search Area</button>
+                        <button type="button" class="btn btn-primary btn-block" id="generateButton">Generate Search
+                            Area
+                        </button>
 
-                        <button type="button" class="btn btn-primary" id="generateButtonLoading" style="display: none;"
+                        <button type="button" class="btn btn-primary btn-block" id="generateButtonLoading"
+                                style="display: none;"
                                 disabled>
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             Working...
                         </button>
 
-                        <button type="button" class="btn btn-secondary" id="loadButton">Repeat Last Search</button>
+                        <button type="button" class="btn btn-success btn-block" style="display: none" id="zooplaButton">
+                            Build Zoopla Search
+                        </button>
                     </div>
                 </div>
             </form>
+            <div id="footer-message" class="alert alert-info" role="alert">
+                <small class="text-muted">
+                    This is just an <a href="https://github.com/beveradb/home-area-helper">open source</a> hobby project
+                    by <a href="https://twitter.com/beveradb">@beveradb</a> - it may be broken or wrong. That said,
+                    please let me know if you find it useful!
+                </small>
+            </div>
         </div>
         <div id="map-container" class="col-12 col-md-8">
             <nav id="map-filter-menu"></nav>
             <div id="map"></div>
         </div>
-        <div class="modal fade" id="mainModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-             aria-hidden="true">
+        <div class="modal fade" id="zooplaSearchModal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="modalTitle"></h5>
+                        <h5 class="modal-title" id="zooplaModalTitle">Build Zoopla Property Search</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
-                    <div class="modal-body" id="modalBody"></div>
+                    <div class="modal-body" id="zooplaModalBody">
+                        <form id="zooplaParametersForm">
+                            <div class="form-row">
+                                <div class="form-group col-12">
+                                    <label for="rentOrBuyInput">Rent / Buy</label>
+                                    <select class="form-control" id="rentOrBuyInput"
+                                            aria-describedby="rentOrBuyInputHelp">
+                                        <option selected>Rent</option>
+                                        <option>Buy</option>
+                                    </select>
+                                    <small id="rentOrBuyInputHelp" class="form-text text-muted"></small>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-12 col-xl-3">
+                                    <label for="minBedsInput">Min. Beds</label>
+                                    <input type="number" class="form-control" id="minBedsInput"
+                                           aria-describedby="minBedsInputHelp"
+                                           placeholder="" value="1">
+                                </div>
+                                <div class="form-group col-12 col-xl-3">
+                                    <label for="maxBedsInput">Max. Beds</label>
+                                    <input type="number" class="form-control" id="maxBedsInput"
+                                           aria-describedby="maxBedsInputHelp"
+                                           placeholder="5" value="5">
+                                </div>
+                                <div class="form-group col-12 col-xl-3">
+                                    <label for="minPriceInput">Min. Price</label>
+                                    <input type="number" class="form-control" id="minPriceInput"
+                                           aria-describedby="minPriceInputHelp"
+                                           placeholder="0" value="0" required>
+                                </div>
+                                <div class="form-group col-12 col-xl-3">
+                                    <label for="maxPriceInput">Max. Price</label>
+                                    <input type="number" class="form-control" id="maxPriceInput"
+                                           aria-describedby="maxPriceInputHelp"
+                                           placeholder="1500" value="1500" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-12 col-xl-4">
+                                    <label for="sharedAccomodationInput">Include Shared Accommodation</label>
+                                    <select class="form-control" id="sharedAccomodationInput"
+                                            aria-describedby="sharedAccomodationInputHelp">
+                                        <option selected>No</option>
+                                        <option>Yes</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-12 col-xl-4">
+                                    <label for="sharedOwnershipInput">Include Shared Ownership</label>
+                                    <select class="form-control" id="sharedOwnershipInput"
+                                            aria-describedby="sharedOwnershipInputHelp">
+                                        <option selected>No</option>
+                                        <option>Yes</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-12 col-xl-4">
+                                    <label for="retirementHomesInput">Include Retirement Homes</label>
+                                    <select class="form-control" id="retirementHomesInput"
+                                            aria-describedby="retirementHomesInputHelp">
+                                        <option selected>No</option>
+                                        <option>Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-12">
+                                    <label for="customKeywordsInput">Custom Search Keywords</label>
+                                    <input type="text" class="form-control" id="customKeywordsInput"
+                                           aria-describedby="customKeywordsInputHelp"
+                                           placeholder="">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="zooplaSearchButton">Search</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="errorModalTitle"></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="errorModalBody"></div>
                 </div>
             </div>
         </div>

@@ -8,15 +8,17 @@ function map_loaded(map) {
     window.mainMap.map = map;
     $('#map-filter-menu').hide();
 
+    $('#generateSearchAreaForm input').each(function (i, elem) {
+        $(elem).val(localStorage.getItem($(elem).attr('id')));
+    });
+
     $("#generateButton").click(function (e) {
         $('#generateSearchAreaForm').submit();
         return false;
     });
 
-    $("#loadButton").click(function (e) {
-        $('#generateSearchAreaForm input').each(function (i, elem) {
-            $(elem).val(localStorage.getItem($(elem).attr('id')));
-        });
+    $("#zooplaButton").click(function (e) {
+        show_zoopla_search_modal();
         return false;
     });
 
@@ -39,6 +41,7 @@ function map_loaded(map) {
         }
 
         $("#generateButton").hide();
+        $("#zooplaButton").hide();
         $('#generateButtonLoading').show();
 
         formInputs.each(function (i, elem) {
@@ -52,16 +55,18 @@ function map_loaded(map) {
             $("#maxDrivingTimeInput").val(),
             $("#minIMDInput").val(),
             function () {
-                $("#generateButton").show();
                 $('#generateButtonLoading').hide();
+                $("#generateButton").show();
+                $("#zooplaButton").show();
+
                 $('#map').get(0).scrollIntoView();
             },
             function (jqXHR, textStatus) {
-                $('#modalTitle').text("Server Error");
+                $('#errorModalTitle').text("Server Error");
                 let errorFrame = $("<iframe class='errorFrame'></iframe>");
                 errorFrame.attr('srcdoc', jqXHR.responseText);
-                $('#modalBody').append(errorFrame);
-                $('#mainModal').modal();
+                $('#errorModalBody').append(errorFrame);
+                $('#errorModal').modal();
 
                 $("#generateButton").show();
                 $('#generateButtonLoading').hide();
@@ -69,6 +74,49 @@ function map_loaded(map) {
         );
 
         return false;
+    });
+}
+
+function show_zoopla_search_modal() {
+    $('#zooplaSearchModal').modal();
+
+    $('#zooplaSearchButton').click(function (e) {
+        let rentBuyString = $('#rentOrBuyInput').val() === "Rent" ? "to-rent" : "for-sale";
+        let sharedAccommodationString = $('#sharedAccomodationInput').val() === "No" ? "false" : "true";
+        let retirementHomesString = $('#retirementHomesInput').val() === "No" ? "false" : "true";
+        let sharedOwnershipString = $('#sharedOwnershipInput').val() === "No" ? "false" : "true";
+
+        let url = "https://www.zoopla.co.uk/" + rentBuyString + "/map/property/uk/?q=UK";
+        url += "&category=residential";
+        url += "&country_code=";
+        url += "&include_shared_accommodation=" + sharedAccommodationString;
+        url += "&keywords=" + encodeURIComponent($('#customKeywordsInput').val().toLowerCase());
+        url += "&radius=0";
+        url += "&added=";
+        url += "&available_from=";
+        url += "&price_frequency=per_month";
+        url += "&price_min=" + $('#minPriceInput').val().toLowerCase();
+        url += "&price_max=" + $('#maxPriceInput').val().toLowerCase();
+        url += "&beds_min=" + $('#minBedsInput').val().toLowerCase();
+        url += "&beds_max=" + $('#maxBedsInput').val().toLowerCase();
+        url += "&include_retirement_home=" + retirementHomesString;
+        url += "&include_shared_ownership=" + sharedOwnershipString;
+        url += "&new_homes=include";
+        url += "&polyenc=" + encodeURIComponent(
+            polyline.fromGeoJSON(
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": window.currentPolygonsData['combinedIntersection']['polygon']['coordinates'][0]
+                    },
+                    "properties": {}
+                }, 5
+            )
+        );
+        url += "&search_source=refine";
+
+        window.open(url, '_blank');
     });
 }
 
@@ -113,9 +161,9 @@ function plot_polygons(polygonResults) {
     plot_polygon(polygonResults, 'walkingIsochrone', layerColours.pop(), 0.3, false);
     plot_polygon(polygonResults, 'publicTransportIsochrone', layerColours.pop(), 0.3, false);
     plot_polygon(polygonResults, 'drivingIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'combinedTransportIsochrone', layerColours.pop(), 0.3, true);
 
-    plot_polygon(polygonResults, 'imdFilterLimited', layerColours.pop(), 0.3, true);
+    plot_polygon(polygonResults, 'combinedTransportIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'imdFilterLimited', layerColours.pop(), 0.3, false);
 
     plot_polygon(polygonResults, 'combinedIntersection', distinctGreen, 0.7, true);
 

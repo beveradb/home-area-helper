@@ -102,7 +102,7 @@ def get_target_area_polygons(
     combined_intersection_polygon = combined_intersection_polygon.simplify(0.0005)
 
     return_object['combinedIntersection'] = {
-        'label': 'Combined Intersection',
+        'label': 'Combined Result',
         'polygon': combined_intersection_polygon
     }
 

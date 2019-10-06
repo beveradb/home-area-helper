@@ -6,15 +6,14 @@ body, html {
     padding: 0;
 }
 
-#controls {
-    overflow: scroll;
-}
-
 #map {
     height: 100%;
     width: 100%;
 }
 
+#footer-message {
+    padding: 0.4rem 0.8rem;
+}
 
 @media (max-width: 576px) {
     #controls .jumbotron {
@@ -26,6 +25,7 @@ body, html {
         font-size: 2rem;
         font-weight: 400;
     }
+
     #controls .jumbotron .lead {
         font-size: 1rem;
         margin-bottom: 0.3rem;
@@ -46,12 +46,18 @@ body, html {
         font-size: 2rem;
         font-weight: 400;
     }
-
 }
 
 @media (max-width: 768px) {
     #map {
         height: 600px;
+    }
+}
+
+@media (min-width: 768px) {
+    #controls {
+        overflow-y: scroll;
+        height: 100%;
     }
 }
 
@@ -61,14 +67,6 @@ body, html {
 @media (min-width: 1200px) {
     #controls .jumbotron h1.display-4 {
         font-size: 3rem;
-    }
-
-    #map {
-        height: 100%;
-    }
-
-    #controls {
-        height: 100%;
     }
 }
 
