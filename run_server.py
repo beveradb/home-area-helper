@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import webbrowser
 
 from flask import Flask, render_template, jsonify
 from shapely.geometry import mapping
@@ -46,5 +45,5 @@ def target_area_json(
 
 
 if __name__ == '__main__':
-    port = os.environ['PORT'] if 'PORT' in os.environ else 3000
+    port = os.environ['PORT'] if 'PORT' in os.environ else 9876
     app.run(debug=True, host='0.0.0.0', port=port, use_evalex=False)

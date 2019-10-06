@@ -54,6 +54,7 @@ function map_loaded(map) {
             function () {
                 $("#generateButton").show();
                 $('#generateButtonLoading').hide();
+                $('#map').get(0).scrollIntoView();
             },
             function (jqXHR, textStatus) {
                 $('#modalTitle').text("Server Error");
