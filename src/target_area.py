@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from shapely.geometry import Polygon
 import matplotlib.pyplot as plt
+from shapely.geometry import Polygon
 
 from src import deprivation
 from src import mapbox
@@ -8,11 +8,11 @@ from src import multi_polygons
 from src import travel_time
 
 
-def get_target_location_polygons(
+def get_target_area_polygons(
         target_location_address: str,
-        search_radius_limit_miles: int,
         max_walking_time_mins: int,
         max_public_transport_travel_time_mins: int,
+        max_driving_time_mins: int,
         min_deprivation_score: int
 ) -> dict:
     return_object = {}
@@ -25,27 +25,20 @@ def get_target_location_polygons(
         'coords': target_lng_lat
     }
 
-    target_bounding_box = multi_polygons.get_bounding_circle_for_point(
-        target_lng_lat, search_radius_limit_miles
-    )
-
-    return_object['targetBoundingBox'] = {
-        'label': str(search_radius_limit_miles) + ' mile Search Radius',
-        'polygon': target_bounding_box
-    }
-
     travel_isochrones_to_combine = []
 
-    combined_iso_poly_label = []
-
     if max_walking_time_mins > 0:
-        walking_isochrone_geom = mapbox.get_walking_isochrone_geometry(
-            target_lng_lat, max_walking_time_mins
+        walking_isochrone_geom = mapbox.get_isochrone_geometry(
+            target_lng_lat, max_walking_time_mins, "walking"
         )
 
         walking_isochrone_polygon = Polygon(walking_isochrone_geom)
         travel_isochrones_to_combine.append(walking_isochrone_polygon)
-        combined_iso_poly_label.append(str(max_walking_time_mins) + 'min Walk')
+
+        return_object['walkingIsochrone'] = {
+            'label': str(max_walking_time_mins) + 'min Walk',
+            'polygon': walking_isochrone_polygon
+        }
 
     if max_public_transport_travel_time_mins > 0:
         pt_iso_geom = travel_time.get_public_transport_isochrone_geometry(
@@ -57,22 +50,43 @@ def get_target_location_polygons(
         public_transport_isochrone_polygon = Polygon(pt_iso_geom)
         travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
 
-        combined_iso_poly_label.append(
-            str(max_public_transport_travel_time_mins) + 'min Public Transport')
+        return_object['publicTransportIsochrone'] = {
+            'label': str(max_public_transport_travel_time_mins) + 'min Public Transport',
+            'polygon': public_transport_isochrone_polygon
+        }
 
-    combined_iso_poly = travel_isochrones_to_combine[0]
+    if max_driving_time_mins > 0:
+        driving_isochrone_geom = mapbox.get_isochrone_geometry(
+            target_lng_lat, max_driving_time_mins, "driving"
+        )
 
-    if len(travel_isochrones_to_combine) > 1:
-        combined_iso_poly = multi_polygons.convert_multi_to_single_with_joining_lines(
-            [travel_isochrones_to_combine[0], travel_isochrones_to_combine[1]])
+        driving_isochrone_polygon = Polygon(driving_isochrone_geom)
+        travel_isochrones_to_combine.append(driving_isochrone_polygon)
+
+        return_object['drivingIsochrone'] = {
+            'label': str(max_driving_time_mins) + 'min Drive',
+            'polygon': driving_isochrone_polygon
+        }
+
+    combined_iso_poly = multi_polygons.convert_multi_to_single_with_joining_lines(
+        travel_isochrones_to_combine
+    )
 
     return_object['combinedTransportIsochrone'] = {
-        'label': ' / '.join(combined_iso_poly_label),
+        'label': 'Combined Transport',
         'polygon': combined_iso_poly
     }
 
+    target_bounding_box_poly = Polygon.from_bounds(*combined_iso_poly.bounds).buffer(0.001)
+    return_object['targetBoundingBox'] = {
+        'label': 'Bounding Box',
+        'polygon': target_bounding_box_poly,
+        'bounds': target_bounding_box_poly.bounds
+    }
+
     imd_filter_limited_polygon = deprivation.get_simplified_clipped_uk_deprivation_polygon(
-        min_deprivation_score, target_lng_lat, search_radius_limit_miles)
+        min_deprivation_score, target_bounding_box_poly
+    )
 
     return_object['imdFilterLimited'] = {
         'label': 'Deprivation Score > ' + str(min_deprivation_score),
@@ -88,7 +102,7 @@ def get_target_location_polygons(
     combined_intersection_polygon = combined_intersection_polygon.simplify(0.0005)
 
     return_object['combinedIntersection'] = {
-        'label': 'Combined Intersection',
+        'label': 'Combined Result',
         'polygon': combined_intersection_polygon
     }
 

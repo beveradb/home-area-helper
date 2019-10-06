@@ -18,10 +18,10 @@ def get_bounding_circle_for_point(target_lng_lat, bounding_box_radius_miles):
 def filter_uk_multipoly_by_target_radius(multi_polygon_to_filter, target_lng_lat, max_distance_limit_miles):
     multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
 
-    w_g_s84to_uk_project = partial(pyproj.transform, pyproj.Proj(init='epsg:4326'), pyproj.Proj(init='epsg:27700'))
+    wgs84_to_uk_project = partial(pyproj.transform, pyproj.Proj(init='epsg:4326'), pyproj.Proj(init='epsg:27700'))
 
     target_bounding_circle = get_bounding_circle_for_point(target_lng_lat, max_distance_limit_miles)
-    target_bounding_circle_uk_project = shapely.ops.transform(w_g_s84to_uk_project, target_bounding_circle)
+    target_bounding_circle_uk_project = shapely.ops.transform(wgs84_to_uk_project, target_bounding_circle)
 
     filtered_multipolygon = []
     for singlePolygon in multi_polygon_to_filter:
@@ -31,18 +31,37 @@ def filter_uk_multipoly_by_target_radius(multi_polygon_to_filter, target_lng_lat
     return filtered_multipolygon
 
 
-def simplify(multi_polygon_to_simplify, simplification_factor):
+def filter_uk_multipoly_by_bounding_box(multi_polygon_to_filter, wgs84_bounding_polygon):
+    multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
+
+    wgs84_to_uk_project = partial(pyproj.transform, pyproj.Proj(init='epsg:4326'), pyproj.Proj(init='epsg:27700'))
+    uk_bounds_polygon = shapely.ops.transform(wgs84_to_uk_project, wgs84_bounding_polygon)
+
+    filtered_multipolygon = []
+    for singlePolygon in multi_polygon_to_filter:
+        if uk_bounds_polygon.contains(singlePolygon.centroid):
+            filtered_multipolygon.append(singlePolygon)
+
+    return filtered_multipolygon
+
+
+def simplify_multi(multi_polygon_to_simplify, simplification_factor):
     multi_polygon_to_simplify = convert_list_to_multi_polygon(multi_polygon_to_simplify)
 
     if multi_polygon_to_simplify is Polygon:
         return multi_polygon_to_simplify.simplify(simplification_factor)
 
-    simplified_multipolygon = []
-    for singlePolygon in multi_polygon_to_simplify:
-        simplified_single_polygon = singlePolygon.simplify(simplification_factor)
-        simplified_multipolygon.append(simplified_single_polygon)
+    try:
+        simplified_multipolygon = []
+        for singlePolygon in multi_polygon_to_simplify:
+            simplified_single_polygon = singlePolygon.simplify(simplification_factor)
+            simplified_multipolygon.append(simplified_single_polygon)
+        return simplified_multipolygon
+    except TypeError as te:
+        # Unsure why we're still getting here occasionally despite if statement above, but meh
+        pass
 
-    return simplified_multipolygon
+    return multi_polygon_to_simplify
 
 
 def convert_multi_to_single_with_joining_lines(multi_polygon_to_join):
@@ -82,12 +101,16 @@ def convert_multi_to_single_with_joining_lines(multi_polygon_to_join):
 
 
 def convert_list_to_multi_polygon(multi_polygon_list):
+    # If the object passed in isn't a list, assume it's already a MultiPolygon and do nothing for easier recursion
     if type(multi_polygon_list) == list and len(multi_polygon_list) > 0:
-        if type(multi_polygon_list[0]) is not Polygon:
-            polygons_list = [Polygon(singlePolygonList) for singlePolygonList in multi_polygon_list]
-        else:
-            polygons_list = multi_polygon_list
+        # For each polygon in the list, ensure it is actually a Polygon object and buffer to remove self-intersections
+        refined_polygons_list = []
+        for single_polygon in multi_polygon_list:
+            if type(single_polygon) is not Polygon:
+                single_polygon = Polygon(single_polygon)
+            refined_polygons_list.append(single_polygon.buffer(0.0000001))
 
-        multi_polygon_list = shapely.ops.unary_union(polygons_list)
+        # Once we have a buffered list of Polygons, combine into a single Polygon or MultiPolygon if there are gaps
+        multi_polygon_list = shapely.ops.unary_union(refined_polygons_list)
 
     return multi_polygon_list

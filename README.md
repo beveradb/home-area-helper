@@ -8,6 +8,8 @@ If you've ever been looking for a property to rent or buy, but:
 
 Well, this tool is here to help solve that, with data! 😎
 
+Latest release hosted on Heroku here: <https://home-area-helper.herokuapp.com>
+
 This should help you generate a meaningful search area which factors in your personal preferences for:
 
 - Maximum walking time from a desired location (optional)
@@ -17,10 +19,10 @@ This should help you generate a meaningful search area which factors in your per
 
 It'll generate shapes for each of those filters based on the parameters you specify, then find the intersection of all of those shapes, representing the area you want to search in:
 
-![alt text](https://raw.githubusercontent.com/beveradb/home-area-helper/master/screenshots/polygon-debugging.png "Debug Output")
+![alt text](https://github.com/beveradb/home-area-helper/blob/master/screenshots/web-ui-example-1.png?raw=true "Web UI")
 
 It'll then produce an encoded URL which is compatible with the leading property search site in the UK, Zoopla, and launch that in a web browser for your convenience:
 
-![alt text](https://github.com/beveradb/home-area-helper/blob/master/screenshots/end-result-zoopla.png?raw=true "Zoopla Output")
+![alt text](https://github.com/beveradb/home-area-helper/blob/master/screenshots/web-ui-example-3.png?raw=true "Zoopla Output")
 
 You can then set up an alert for that search on Zoopla's site so you get an immediate notification whenever a new property comes on the market in your budget in that area! 

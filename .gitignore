@@ -1,4 +1,6 @@
 .DS_Store
 mapbox-polygon-temp.html
 __pycache__
+*.pyc
+*.swp
 .idea
