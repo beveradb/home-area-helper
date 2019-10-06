@@ -44,54 +44,51 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group col-12 col-xl-4">
-                        <label for="maxWalkingTimeInput">Walking</label>
+                        <label for="maxWalkingTimeInput">Walking (mins)</label>
                         <input type="number" class="form-control" id="maxWalkingTimeInput"
                                placeholder="">
                     </div>
                     <div class="form-group col-12 col-xl-4">
-                        <label for="maxCyclingTimeInput">Cycling</label>
+                        <label for="maxCyclingTimeInput">Cycling (mins)</label>
                         <input type="number" class="form-control" id="maxCyclingTimeInput"
                                placeholder="">
                     </div>
                     <div class="form-group col-12 col-xl-4">
-                        <label for="maxBusTimeInput">Bus</label>
+                        <label for="maxBusTimeInput">Bus (mins)</label>
                         <input type="number" class="form-control" id="maxBusTimeInput"
                                placeholder="">
                     </div>
                     <div class="form-group col-12 col-xl-4">
-                        <label for="maxCoachTimeInput">Coach</label>
+                        <label for="maxCoachTimeInput">Coach (mins)</label>
                         <input type="number" class="form-control" id="maxCoachTimeInput"
                                placeholder="">
                     </div>
                     <div class="form-group col-12 col-xl-4">
-                        <label for="maxTrainTimeInput">Train</label>
+                        <label for="maxTrainTimeInput">Train (mins)</label>
                         <input type="number" class="form-control" id="maxTrainTimeInput"
                                placeholder="">
                     </div>
                     <div class="form-group col-12 col-xl-4">
-                        <label for="maxDrivingTimeInput">Driving</label>
+                        <label for="maxDrivingTimeInput">Driving (mins)</label>
                         <input type="number" class="form-control" id="maxDrivingTimeInput"
                                placeholder="">
                     </div>
                     <div class="form-group col-12">
                         <small id="maxTransportTimeHelp" class="form-text text-muted">
                             Maximum journey time to consider for each method of transport, in minutes.<br/>
-                            If you can't/won't travel by one of these methods, set it to 0 to exclude.<br/>
-                            These are <i>additive</i>, so if you can reach somewhere by any of these it'll be included.
+                            Leave blank to exclude if you won't travel by one of these methods.<br/>
+                            These are <i>combined</i>, so if you can reach your target by any mode, it'll be included.
                         </small>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group col-12">
-                        <label for="minIMDInput">Minimum Deprivation Rank</label>
+                        <label for="minIMDInput">Minimum Deprivation Rank (1-10)</label>
                         <input type="number" class="form-control" id="minIMDInput"
                                aria-describedby="minIMDHelp"
                                placeholder="" min="1" max="10">
                         <small id="minIMDHelp" class="form-text text-muted">
-                            Minimum deprivation rank (1-10) to consider, based on public data:
-                            (<a href="https://simd.scot" target="_blank">Scotland</a>,
-                            <a href="http://dclgapps.communities.gov.uk/imd/iod_index.html" target="_blank">England</a>).<br/>
-                            1 allows all areas, 10 allows only the top 10% least deprived areas.
+                            Leave blank to allow all areas, 5 to allow only the top 50% least deprived areas.
                         </small>
                     </div>
                 </div>
@@ -117,8 +114,10 @@
             <div id="footer-message" class="alert alert-info" role="alert">
                 <small class="text-muted">
                     This is just an <a href="https://github.com/beveradb/home-area-helper">open source</a> hobby project
-                    by <a href="https://twitter.com/beveradb">@beveradb</a> - it may be broken or wrong. That said,
-                    please let me know if you find it useful!
+                    by <a href="https://twitter.com/beveradb">@beveradb</a> based on public IMD data:
+                    (<a href="https://simd.scot" target="_blank">Scotland</a>,
+                    <a href="http://dclgapps.communities.gov.uk/imd/iod_index.html" target="_blank">England</a>)
+                    - it may be broken. Let me know your thoughts / suggestions!
                 </small>
             </div>
         </div>
@@ -153,25 +152,25 @@
                                     <label for="minBedsInput">Min. Beds</label>
                                     <input type="number" class="form-control" id="minBedsInput"
                                            aria-describedby="minBedsInputHelp"
-                                           placeholder="" value="1">
+                                           placeholder="" value="">
                                 </div>
                                 <div class="form-group col-12 col-xl-3">
                                     <label for="maxBedsInput">Max. Beds</label>
                                     <input type="number" class="form-control" id="maxBedsInput"
                                            aria-describedby="maxBedsInputHelp"
-                                           placeholder="" value="5">
+                                           placeholder="" value="">
                                 </div>
                                 <div class="form-group col-12 col-xl-3">
                                     <label for="minPriceInput">Min. Price</label>
                                     <input type="number" class="form-control" id="minPriceInput"
                                            aria-describedby="minPriceInputHelp"
-                                           placeholder="" value="0" required>
+                                           placeholder="" value="">
                                 </div>
                                 <div class="form-group col-12 col-xl-3">
                                     <label for="maxPriceInput">Max. Price</label>
                                     <input type="number" class="form-control" id="maxPriceInput"
                                            aria-describedby="maxPriceInputHelp"
-                                           placeholder="" value="1500" required>
+                                           placeholder="" value="">
                                 </div>
                             </div>
                             <div class="form-row">

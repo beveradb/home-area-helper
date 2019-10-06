@@ -12,6 +12,13 @@ function map_loaded(map) {
         $(elem).val(localStorage.getItem($(elem).attr('id')));
     });
 
+    $('#generateSearchAreaForm input').keypress(function (e) {
+        if (e.which === 13) {
+            $('#generateSearchAreaForm').submit();
+            return false;
+        }
+    });
+
     $("#generateButton").click(function (e) {
         $('#generateSearchAreaForm').submit();
         return false;
