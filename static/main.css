@@ -17,8 +17,22 @@ body, html {
 
 
 @media (max-width: 576px) {
-    #map-filter-menu a {
-        padding: 3px;
+    #controls .jumbotron {
+        padding: 0.4rem 1rem 0.1rem 1rem;
+        margin-top: 1rem;
+    }
+
+    #controls .jumbotron h1.display-4 {
+        font-size: 2rem;
+        font-weight: 400;
+    }
+    #controls .jumbotron .lead {
+        font-size: 1rem;
+        margin-bottom: 0.3rem;
+    }
+
+    #map-container #map-filter-menu a {
+        padding: 2px;
     }
 }
 
