@@ -32,6 +32,19 @@ function map_loaded(map) {
         }).get().some(function (value) {
             return value === false;
         });
+        if (
+            !($("#maxWalkingTimeInput").val()) &&
+            !($("#maxCyclingTimeInput").val()) &&
+            !($("#maxBusTimeInput").val()) &&
+            !($("#maxCoachTimeInput").val()) &&
+            !($("#maxTrainTimeInput").val()) &&
+            !($("#maxDrivingTimeInput").val())
+        ) {
+            $('#errorModalTitle').text("Error");
+            $('#errorModalBody').html("At least one of the travel options must be specified to generate an area!");
+            $('#errorModal').modal();
+            formValid = false;
+        }
 
         if (formValid === false) {
             formInputs.each(function (key, elem) {
@@ -51,7 +64,10 @@ function map_loaded(map) {
         generate_and_plot_areas(
             $("#targetAddressInput").val(),
             $("#maxWalkingTimeInput").val(),
-            $("#maxPublicTransportTimeInput").val(),
+            $("#maxCyclingTimeInput").val(),
+            $("#maxBusTimeInput").val(),
+            $("#maxCoachTimeInput").val(),
+            $("#maxTrainTimeInput").val(),
             $("#maxDrivingTimeInput").val(),
             $("#minIMDInput").val(),
             function () {
@@ -123,7 +139,10 @@ function show_zoopla_search_modal() {
 function generate_and_plot_areas(
     targetAddress,
     maxWalkingTime,
-    maxPublicTransportTime,
+    maxCyclingTime,
+    maxBusTime,
+    maxCoachTime,
+    maxTrainTime,
     maxDrivingTime,
     minIMDInput,
     successCallback,
@@ -131,9 +150,20 @@ function generate_and_plot_areas(
 ) {
     clear_map(window.mainMap.map);
 
+    if (!maxWalkingTime) maxWalkingTime = 0;
+    if (!maxCyclingTime) maxCyclingTime = 0;
+    if (!maxBusTime) maxBusTime = 0;
+    if (!maxCoachTime) maxCoachTime = 0;
+    if (!maxTrainTime) maxTrainTime = 0;
+    if (!maxDrivingTime) maxDrivingTime = 0;
+    if (!minIMDInput) minIMDInput = 0;
+
     let polygonURL = "/target_area/" + encodeURIComponent(targetAddress);
     polygonURL += "/" + encodeURIComponent(maxWalkingTime);
-    polygonURL += "/" + encodeURIComponent(maxPublicTransportTime);
+    polygonURL += "/" + encodeURIComponent(maxCyclingTime);
+    polygonURL += "/" + encodeURIComponent(maxBusTime);
+    polygonURL += "/" + encodeURIComponent(maxCoachTime);
+    polygonURL += "/" + encodeURIComponent(maxTrainTime);
     polygonURL += "/" + encodeURIComponent(maxDrivingTime);
     polygonURL += "/" + encodeURIComponent(minIMDInput);
 
@@ -153,13 +183,16 @@ function generate_and_plot_areas(
 
 function plot_polygons(polygonResults) {
     // Accessible, distinct colours from https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/
-    let layerColours = ["#e6194B", "#4363d8", "#f58231", "#f032e6", "#469990", "#9A6324", "#800000"];
+    let layerColours = ["#e6194B", "#4363d8", "#f58231", "#f032e6", "#469990", "#9A6324", "#800000", "#000075"];
     let distinctGreen = "#3cb44b";
 
     // plot_polygon(polygonResults, 'targetBoundingBox', layerColours.pop(), 0.1, false);
 
     plot_polygon(polygonResults, 'walkingIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'publicTransportIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'cyclingIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'busIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'coachIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'trainIsochrone', layerColours.pop(), 0.3, false);
     plot_polygon(polygonResults, 'drivingIsochrone', layerColours.pop(), 0.3, false);
 
     plot_polygon(polygonResults, 'combinedTransportIsochrone', layerColours.pop(), 0.3, false);
@@ -241,6 +274,9 @@ function plot_polygon(polygonObject, id, color, opacity = 0.3, visible = true) {
         'paint': {
             'fill-color': color,
             'fill-opacity': opacity
+        },
+        'metadata': {
+            'home-area-helper': true
         }
     });
 }
@@ -254,10 +290,14 @@ function clear_map() {
         }
     }
 
-    if (window.mainMap.currentLayers !== null) {
-        for (let i = window.mainMap.currentLayers.length - 1; i >= 0; i--) {
-            window.mainMap.map.removeLayer(window.mainMap.currentLayers[i]);
-            window.mainMap.map.removeSource(window.mainMap.currentLayers[i]);
+    if (window.mainMap.currentLayers !== null && window.mainMap.map) {
+        let hhaLayers = window.mainMap.map.getStyle().layers.filter(function (el) {
+            return (el['metadata'] && el['metadata']['home-area-helper']);
+        });
+
+        for (let i = hhaLayers.length - 1; i >= 0; i--) {
+            window.mainMap.map.removeLayer(hhaLayers[i]['id']);
+            window.mainMap.map.removeSource(hhaLayers[i]['id']);
         }
     }
 }

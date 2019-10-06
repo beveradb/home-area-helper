@@ -37,7 +37,7 @@
                         <label for="targetAddressInput">Target Address</label>
                         <input type="text" class="form-control" id="targetAddressInput"
                                aria-describedby="targetAddressHelp"
-                               placeholder="Princes Street, Edinburgh, UK" required>
+                               placeholder="" required>
                         <small id="targetAddressHelp" class="form-text text-muted">Destination address for travel time
                             calculations - e.g. workplace, city center, family home</small>
                     </div>
@@ -46,23 +46,35 @@
                     <div class="form-group col-12 col-xl-4">
                         <label for="maxWalkingTimeInput">Walking</label>
                         <input type="number" class="form-control" id="maxWalkingTimeInput"
-                               aria-describedby="maxTansportTimeHelp"
-                               placeholder="15" required>
+                               placeholder="">
                     </div>
                     <div class="form-group col-12 col-xl-4">
-                        <label for="maxPublicTransportTimeInput">Public Transport</label>
-                        <input type="number" class="form-control" id="maxPublicTransportTimeInput"
-                               aria-describedby="maxTansportTimeHelp"
-                               placeholder="30" required>
+                        <label for="maxCyclingTimeInput">Cycling</label>
+                        <input type="number" class="form-control" id="maxCyclingTimeInput"
+                               placeholder="">
+                    </div>
+                    <div class="form-group col-12 col-xl-4">
+                        <label for="maxBusTimeInput">Bus</label>
+                        <input type="number" class="form-control" id="maxBusTimeInput"
+                               placeholder="">
+                    </div>
+                    <div class="form-group col-12 col-xl-4">
+                        <label for="maxCoachTimeInput">Coach</label>
+                        <input type="number" class="form-control" id="maxCoachTimeInput"
+                               placeholder="">
+                    </div>
+                    <div class="form-group col-12 col-xl-4">
+                        <label for="maxTrainTimeInput">Train</label>
+                        <input type="number" class="form-control" id="maxTrainTimeInput"
+                               placeholder="">
                     </div>
                     <div class="form-group col-12 col-xl-4">
                         <label for="maxDrivingTimeInput">Driving</label>
                         <input type="number" class="form-control" id="maxDrivingTimeInput"
-                               aria-describedby="maxTansportTimeHelp"
-                               placeholder="0" required>
+                               placeholder="">
                     </div>
                     <div class="form-group col-12">
-                        <small id="maxTansportTimeHelp" class="form-text text-muted">
+                        <small id="maxTransportTimeHelp" class="form-text text-muted">
                             Maximum journey time to consider for each method of transport, in minutes.<br/>
                             If you can't/won't travel by one of these methods, set it to 0 to exclude.<br/>
                             These are <i>additive</i>, so if you can reach somewhere by any of these it'll be included.
@@ -74,7 +86,7 @@
                         <label for="minIMDInput">Minimum Deprivation Rank</label>
                         <input type="number" class="form-control" id="minIMDInput"
                                aria-describedby="minIMDHelp"
-                               placeholder="5" min="1" max="10" required>
+                               placeholder="" min="1" max="10">
                         <small id="minIMDHelp" class="form-text text-muted">
                             Minimum deprivation rank (1-10) to consider, based on public data:
                             (<a href="https://simd.scot" target="_blank">Scotland</a>,
@@ -147,19 +159,19 @@
                                     <label for="maxBedsInput">Max. Beds</label>
                                     <input type="number" class="form-control" id="maxBedsInput"
                                            aria-describedby="maxBedsInputHelp"
-                                           placeholder="5" value="5">
+                                           placeholder="" value="5">
                                 </div>
                                 <div class="form-group col-12 col-xl-3">
                                     <label for="minPriceInput">Min. Price</label>
                                     <input type="number" class="form-control" id="minPriceInput"
                                            aria-describedby="minPriceInputHelp"
-                                           placeholder="0" value="0" required>
+                                           placeholder="" value="0" required>
                                 </div>
                                 <div class="form-group col-12 col-xl-3">
                                     <label for="maxPriceInput">Max. Price</label>
                                     <input type="number" class="form-control" id="maxPriceInput"
                                            aria-describedby="maxPriceInputHelp"
-                                           placeholder="1500" value="1500" required>
+                                           placeholder="" value="1500" required>
                                 </div>
                             </div>
                             <div class="form-row">

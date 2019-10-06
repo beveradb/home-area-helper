@@ -22,11 +22,20 @@ def index():
     )
 
 
-@app.route('/target_area/<string:target>/<int:walking>/<int:pubtrans>/<int:driving>/<int:deprivation>')
+target_area_route = '/target_area/<string:target>'
+target_area_route += '/<int:walking>/<int:cycling>/<int:bus>'
+target_area_route += '/<int:coach>/<int:train>/<int:driving>'
+target_area_route += '/<int:deprivation>'
+
+
+@app.route(target_area_route)
 def target_area_json(
         target: str,
         walking: int,
-        pubtrans: int,
+        cycling: int,
+        bus: int,
+        coach: int,
+        train: int,
         driving: int,
         deprivation: int
 ):
@@ -34,7 +43,10 @@ def target_area_json(
         target_location_address=target,
         min_deprivation_score=deprivation,
         max_walking_time_mins=walking,
-        max_public_transport_travel_time_mins=pubtrans,
+        max_cycling_time_mins=cycling,
+        max_bus_time_mins=bus,
+        max_coach_time_mins=coach,
+        max_train_time_mins=train,
         max_driving_time_mins=driving
     )
     for key, value in polygon_results.items():

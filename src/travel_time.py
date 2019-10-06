@@ -4,21 +4,21 @@ import os
 import urllib.request
 
 
-def get_public_transport_isochrone_geometry(target_lng_lat, max_public_transport_travel_time_mins):
+def get_public_transport_isochrone_geometry(target_lng_lat, mode, max_travel_time_mins):
     public_transport_isochrone_request_headers = {
         'Content-Type': 'application/json',
         "X-Application-Id": os.environ['TRAVELTIME_APP_ID'],
         "X-Api-Key": os.environ['TRAVELTIME_API_KEY'],
     }
 
-    public_transport_isochrone_request_body_j_s_o_n = json.dumps({
+    public_transport_isochrone_request_body_json = json.dumps({
         "departure_searches": [
             {
                 "id": "first request",
                 "coords": {"lng": target_lng_lat[0], "lat": target_lng_lat[1]},
-                "transportation": {"type": "public_transport"},
+                "transportation": {"type": mode},
                 "departure_time": "2019-09-30T08:00:00+0000",
-                "travel_time": int(max_public_transport_travel_time_mins) * int(60)
+                "travel_time": int(max_travel_time_mins) * int(60)
             }
         ],
         "arrival_searches": []
@@ -26,7 +26,7 @@ def get_public_transport_isochrone_geometry(target_lng_lat, max_public_transport
 
     public_transport_isochrone_request = urllib.request.Request(
         'http://api.traveltimeapp.com/v4/time-map',
-        public_transport_isochrone_request_body_j_s_o_n.encode("utf-8"),
+        public_transport_isochrone_request_body_json.encode("utf-8"),
         public_transport_isochrone_request_headers
     )
 
