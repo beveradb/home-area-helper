@@ -58,6 +58,7 @@ def target_area_json(
         return json.dumps(polygon_results)
 
     def generate():
+        yield " "
         yield str(calculate_results())
 
     return Response(stream_with_context(generate()), mimetype='application/json')
