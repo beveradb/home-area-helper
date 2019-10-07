@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+import json
 import os
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, Response, stream_with_context
 from shapely.geometry import mapping
 
 from src import target_area
@@ -39,21 +40,27 @@ def target_area_json(
         driving: int,
         deprivation: int
 ):
-    polygon_results = target_area.get_target_area_polygons(
-        target_location_address=target,
-        min_deprivation_score=deprivation,
-        max_walking_time_mins=walking,
-        max_cycling_time_mins=cycling,
-        max_bus_time_mins=bus,
-        max_coach_time_mins=coach,
-        max_train_time_mins=train,
-        max_driving_time_mins=driving
-    )
-    for key, value in polygon_results.items():
-        if 'polygon' in value:
-            polygon_results[key]['polygon'] = mapping(value['polygon'])
+    def calculate_results():
+        polygon_results = target_area.get_target_area_polygons(
+            target_location_address=target,
+            min_deprivation_score=deprivation,
+            max_walking_time_mins=walking,
+            max_cycling_time_mins=cycling,
+            max_bus_time_mins=bus,
+            max_coach_time_mins=coach,
+            max_train_time_mins=train,
+            max_driving_time_mins=driving
+        )
+        for key, value in polygon_results.items():
+            if 'polygon' in value:
+                polygon_results[key]['polygon'] = mapping(value['polygon'])
 
-    return jsonify(polygon_results)
+        return json.dumps(polygon_results)
+
+    def generate():
+        yield str(calculate_results())
+
+    return Response(stream_with_context(generate()), mimetype='application/json')
 
 
 if __name__ == '__main__':
