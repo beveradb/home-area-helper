@@ -147,6 +147,8 @@ def get_target_area_polygons(
             'polygon': imd_filter_limited_polygon
         }
 
+        combined_iso_poly = combined_iso_poly.buffer(0.00001)
+        imd_filter_limited_polygon = imd_filter_limited_polygon.buffer(0.00001)
         combined_intersection_polygon = combined_iso_poly.intersection(imd_filter_limited_polygon)
 
         combined_intersection_polygon = multi_polygons.convert_multi_to_single_with_joining_lines(
