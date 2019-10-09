@@ -40,8 +40,6 @@ def target_area_json(
         driving: int,
         deprivation: int
 ):
-    timeit.clear_logfile()
-
     # yappi.start()
 
     def calculate_results():

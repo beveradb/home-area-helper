@@ -43,12 +43,11 @@ def timeit(method):
 
 
 def log_cumulatives():
-    with open(time_trace_logfile, 'a') as f:
-        for key in sorted(methods_cumulative.keys()):
-            if methods_cumulative[key]['time'] > 200:
-                print('[%s] SLOW: %s - calls: %1.0f - time: %1.0f ms' % (
-                    datetime.datetime.utcnow().strftime("%d/%b/%Y %H:%I:%S"),
-                    key,
-                    methods_cumulative[key]['calls'],
-                    methods_cumulative[key]['time']
-                ), file=f)
+    for key in sorted(methods_cumulative.keys()):
+        if methods_cumulative[key]['time'] > 200:
+            print('[%s] SLOW: %s - calls: %1.0f - time: %1.0f ms' % (
+                datetime.datetime.utcnow().strftime("%d/%b/%Y %H:%I:%S"),
+                key,
+                methods_cumulative[key]['calls'],
+                methods_cumulative[key]['time']
+            ))
