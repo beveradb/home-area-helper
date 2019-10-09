@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
+import datetime
 import json
 import os
 import urllib.request
 
+from src.timeit import timeit
 
+
+@timeit
 def get_public_transport_isochrone_geometry(target_lng_lat, mode, max_travel_time_mins):
     public_transport_isochrone_request_headers = {
         'Content-Type': 'application/json',
@@ -24,6 +28,11 @@ def get_public_transport_isochrone_geometry(target_lng_lat, mode, max_travel_tim
         "arrival_searches": []
     })
 
+    print('[%s] Making HTTP request to TravelTime API for mode: %s with mins: %1.0f' % (
+        datetime.datetime.utcnow().strftime("%d/%b/%Y %H:%I:%S"),
+        mode, int(max_travel_time_mins)
+    ))
+
     public_transport_isochrone_request = urllib.request.Request(
         'http://api.traveltimeapp.com/v4/time-map',
         public_transport_isochrone_request_body_json.encode("utf-8"),
@@ -36,9 +45,15 @@ def get_public_transport_isochrone_geometry(target_lng_lat, mode, max_travel_tim
 
     public_transport_isochrone_shapes = public_transport_isochrone_response_object['results'][0]['shapes']
 
+    print('[%s] Received response from TravelTime API with shapes: %1.0f' % (
+        datetime.datetime.utcnow().strftime("%d/%b/%Y %H:%I:%S"),
+        len(public_transport_isochrone_shapes)
+    ))
+
     return normalise_travel_time_shapes(public_transport_isochrone_shapes)
 
 
+@timeit
 def normalise_travel_time_shapes(shapes_list):
     shapes_list_normalised = []
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon
 
@@ -6,8 +7,10 @@ from src import deprivation
 from src import mapbox
 from src import multi_polygons
 from src import travel_time
+from src.timeit import timeit
 
 
+@timeit
 def get_target_area_polygons(
         target_location_address: str,
         max_walking_time_mins: int,
@@ -160,6 +163,7 @@ def get_target_area_polygons(
     return return_object
 
 
+@timeit
 def plot_target_area_polygons_mpl(intersection_results):
     for key, value in intersection_results.items():
         if 'polygon' in value:

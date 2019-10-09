@@ -2,10 +2,10 @@
 import json
 import os
 
-from flask import Flask, render_template, Response, stream_with_context
+from flask import Flask, render_template, Response
 from shapely.geometry import mapping
 
-from src import target_area
+from src import target_area, timeit
 
 app = Flask(__name__)
 
@@ -40,6 +40,10 @@ def target_area_json(
         driving: int,
         deprivation: int
 ):
+    timeit.clear_logfile()
+
+    # yappi.start()
+
     def calculate_results():
         polygon_results = target_area.get_target_area_polygons(
             target_location_address=target,
@@ -57,11 +61,15 @@ def target_area_json(
 
         return json.dumps(polygon_results)
 
-    def generate():
-        yield " "
-        yield str(calculate_results())
+    results = calculate_results()
 
-    return Response(stream_with_context(generate()), mimetype='application/json')
+    # func_stats = yappi.get_func_stats()
+    # func_stats.save('callgrind.out.' + str(time.time()), 'CALLGRIND')
+    # yappi.stop()
+    # yappi.clear_stats()
+    timeit.log_cumulatives()
+
+    return Response(results, mimetype='application/json')
 
 
 if __name__ == '__main__':
