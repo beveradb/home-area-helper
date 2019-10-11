@@ -179,8 +179,8 @@ function generate_and_plot_areas(
     polygonURL += "/" + encodeURIComponent(maxTrainTime);
     polygonURL += "/" + encodeURIComponent(maxDrivingTime);
     polygonURL += "/" + encodeURIComponent(minIMDInput);
-    polygonURL += "/" + encodeURIComponent(parseFloat(maxRadiusInput).toFixed(2));
-    polygonURL += "/" + encodeURIComponent(parseFloat(simplifyFactorInput).toFixed(2));
+    polygonURL += "/" + encodeURIComponent(parseFloat(maxRadiusInput).toFixed(8));
+    polygonURL += "/" + encodeURIComponent(parseFloat(simplifyFactorInput).toFixed(8));
 
     $.getJSON(polygonURL, function (data) {
         window.currentPolygonsData = data;
