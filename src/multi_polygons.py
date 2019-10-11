@@ -3,6 +3,7 @@ from functools import partial
 
 import pyproj
 import shapely.ops
+from shapely.affinity import scale
 from shapely.geometry import Point, MultiPoint, Polygon, LineString
 
 from src.timeit import timeit
@@ -14,6 +15,9 @@ def get_bounding_circle_for_point(target_lng_lat, bounding_box_radius_miles):
     # It's good enough for now, and much easier than proper projection
     buffer_distance_degrees = bounding_box_radius_miles / 50
     target_bounding_circle = Point(target_lng_lat).buffer(buffer_distance_degrees, 6)
+
+    # Scale the bounding circle to make up for the UK projection issue
+    target_bounding_circle = scale(target_bounding_circle, xfact=1.0, yfact=0.65)
 
     return target_bounding_circle
 
@@ -189,6 +193,7 @@ def refine_polygons(polygons_list):
     for key, single_polygon in enumerate(polygons_list):
         if type(single_polygon) is not Polygon:
             single_polygon = instanciate_polygon(single_polygon)
+        single_polygon = simplify_polygon(single_polygon, 0.0000001)
         polygons_list[key] = buffer_polygon(single_polygon)
     return polygons_list
 

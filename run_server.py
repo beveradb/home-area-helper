@@ -26,7 +26,7 @@ def index():
 target_area_route = '/target_area/<string:target>'
 target_area_route += '/<int:walking>/<int:cycling>/<int:bus>'
 target_area_route += '/<int:coach>/<int:train>/<int:driving>'
-target_area_route += '/<int:deprivation>'
+target_area_route += '/<int:deprivation>/<float:radius>/<float:simplify>'
 
 
 @app.route(target_area_route)
@@ -38,7 +38,9 @@ def target_area_json(
         coach: int,
         train: int,
         driving: int,
-        deprivation: int
+        deprivation: int,
+        radius: float,
+        simplify: float
 ):
     # yappi.start()
 
@@ -51,7 +53,9 @@ def target_area_json(
             max_bus_time_mins=bus,
             max_coach_time_mins=coach,
             max_train_time_mins=train,
-            max_driving_time_mins=driving
+            max_driving_time_mins=driving,
+            max_radius_miles=radius,
+            simplify_factor=simplify
         )
         for key, value in polygon_results.items():
             if 'polygon' in value:

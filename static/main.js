@@ -77,6 +77,8 @@ function map_loaded(map) {
             $("#maxTrainTimeInput").val(),
             $("#maxDrivingTimeInput").val(),
             $("#minIMDInput").val(),
+            $("#maxRadiusInput").val(),
+            $("#simplifyFactorInput").val(),
             function () {
                 $('#generateButtonLoading').hide();
                 $("#generateButton").show();
@@ -152,6 +154,8 @@ function generate_and_plot_areas(
     maxTrainTime,
     maxDrivingTime,
     minIMDInput,
+    maxRadiusInput,
+    simplifyFactorInput,
     successCallback,
     errorCallback
 ) {
@@ -164,6 +168,8 @@ function generate_and_plot_areas(
     if (!maxTrainTime) maxTrainTime = 0;
     if (!maxDrivingTime) maxDrivingTime = 0;
     if (!minIMDInput) minIMDInput = 0;
+    if (!maxRadiusInput) maxRadiusInput = 0;
+    if (!simplifyFactorInput) simplifyFactorInput = 0;
 
     let polygonURL = "/target_area/" + encodeURIComponent(targetAddress);
     polygonURL += "/" + encodeURIComponent(maxWalkingTime);
@@ -173,6 +179,8 @@ function generate_and_plot_areas(
     polygonURL += "/" + encodeURIComponent(maxTrainTime);
     polygonURL += "/" + encodeURIComponent(maxDrivingTime);
     polygonURL += "/" + encodeURIComponent(minIMDInput);
+    polygonURL += "/" + encodeURIComponent(parseFloat(maxRadiusInput).toFixed(2));
+    polygonURL += "/" + encodeURIComponent(parseFloat(simplifyFactorInput).toFixed(2));
 
     $.getJSON(polygonURL, function (data) {
         window.currentPolygonsData = data;
@@ -190,7 +198,8 @@ function generate_and_plot_areas(
 
 function plot_polygons(polygonResults) {
     // Accessible, distinct colours from https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/
-    let layerColours = ["#e6194B", "#4363d8", "#f58231", "#f032e6", "#469990", "#9A6324", "#800000", "#000075"];
+    let layerColours = ["#e6194B", "#4363d8", "#f58231", "#f032e6", "#469990", "#9A6324", "#800000", "#000075",
+        "#e6194B", "#4363d8"];
     let distinctGreen = "#3cb44b";
 
     // plot_polygon(polygonResults, 'targetBoundingBox', layerColours.pop(), 0.1, false);
@@ -201,6 +210,8 @@ function plot_polygons(polygonResults) {
     plot_polygon(polygonResults, 'coachIsochrone', layerColours.pop(), 0.3, false);
     plot_polygon(polygonResults, 'trainIsochrone', layerColours.pop(), 0.3, false);
     plot_polygon(polygonResults, 'drivingIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'radiusIsochrone', layerColours.pop(), 0.3, false);
+    plot_polygon(polygonResults, 'preSimplify', layerColours.pop(), 0.3, false);
 
     plot_polygon(polygonResults, 'combinedTransportIsochrone', layerColours.pop(), 0.3, false);
     plot_polygon(polygonResults, 'imdFilterLimited', layerColours.pop(), 0.3, false);

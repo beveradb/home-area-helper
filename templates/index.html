@@ -71,13 +71,32 @@
                     <div class="form-group col-12 col-xl-4">
                         <label for="maxDrivingTimeInput">Driving (mins)</label>
                         <input type="number" class="form-control" id="maxDrivingTimeInput"
-                               placeholder="" max="60">
+                               placeholder="" max="240">
                     </div>
                     <div class="form-group col-12">
                         <small id="maxTransportTimeHelp" class="form-text text-muted">
                             Maximum journey time to consider for each method of transport, in minutes.<br/>
                             Leave blank to exclude if you won't travel by one of these methods.<br/>
                             These are <i>combined</i>, so if you can reach your target by any mode, it'll be included.
+                        </small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-12 col-xl-6">
+                        <label for="maxRadiusInput">Maximum Radius (miles)</label>
+                        <input type="number" class="form-control" id="maxRadiusInput"
+                               aria-describedby="maxRadiusHelp"
+                               placeholder="" step="0.01">
+                        <small id="maxRadiusHelp" class="form-text text-muted">
+                            Limit resulting shape to max radius. Can be useful to filter out outliers from above.
+                        </small>
+                    </div>
+                    <div class="form-group col-12 col-xl-6">
+                        <label for="simplifyFactorInput">Simplify</label>
+                        <input type="number" class="form-control" id="simplifyFactorInput"
+                               placeholder="" max="1" step="0.00000001">
+                        <small id="simplifyFactorInputHelp" class="form-text text-muted">
+                            Simplify resulting shape (if set). Can be useful for Zoopla URL limit.
                         </small>
                     </div>
                 </div>

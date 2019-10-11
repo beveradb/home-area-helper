@@ -19,7 +19,9 @@ def get_target_area_polygons(
         max_coach_time_mins: int,
         max_train_time_mins: int,
         max_driving_time_mins: int,
-        min_deprivation_score: int
+        min_deprivation_score: int,
+        max_radius_miles: float,
+        simplify_factor: float
 ) -> dict:
     return_object = {}
 
@@ -107,9 +109,11 @@ def get_target_area_polygons(
         }
 
     if max_driving_time_mins > 0:
-        driving_isochrone_geom = mapbox.get_isochrone_geometry(
-            target_lng_lat, max_driving_time_mins, "driving"
-        )
+        driving_isochrone_geom = travel_time.get_public_transport_isochrone_geometry(
+            target_lng_lat, "driving", max_driving_time_mins)
+
+        driving_isochrone_geom = multi_polygons.convert_multi_to_single_with_joining_lines(
+            driving_isochrone_geom)
 
         driving_isochrone_polygon = Polygon(driving_isochrone_geom)
         travel_isochrones_to_combine.append(driving_isochrone_polygon)
@@ -127,6 +131,16 @@ def get_target_area_polygons(
         'label': 'Combined Transport',
         'polygon': combined_iso_poly
     }
+
+    if max_radius_miles > 0:
+        max_radius_polygon = multi_polygons.get_bounding_circle_for_point(target_lng_lat, max_radius_miles)
+
+        combined_iso_poly = combined_iso_poly.intersection(max_radius_polygon)
+
+        return_object['radiusIsochrone'] = {
+            'label': str(max_radius_miles) + 'mile radius',
+            'polygon': max_radius_polygon
+        }
 
     target_bounding_box_poly = Polygon.from_bounds(*combined_iso_poly.bounds).buffer(0.001)
     return_object['targetBoundingBox'] = {
@@ -154,8 +168,14 @@ def get_target_area_polygons(
         combined_intersection_polygon = multi_polygons.convert_multi_to_single_with_joining_lines(
             combined_intersection_polygon)
 
-    # Simplify resulting polygon somewhat as URL can't be too long or Zoopla throws HTTP 414 error
-    combined_intersection_polygon = combined_intersection_polygon.simplify(0.0005)
+    if simplify_factor > 0:
+        return_object['preSimplify'] = {
+            'label': 'Result pre-simplify: ' + str(simplify_factor),
+            'polygon': combined_intersection_polygon
+        }
+
+        # Simplify resulting polygon somewhat as URL can't be too long or Zoopla throws HTTP 414 error
+        combined_intersection_polygon = combined_intersection_polygon.simplify(simplify_factor)
 
     return_object['combinedIntersection'] = {
         'label': 'Combined Result',
