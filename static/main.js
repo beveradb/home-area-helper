@@ -193,7 +193,7 @@ function generate_and_plot_areas(
         data: JSON.stringify(allTargetsData),
         success: function (data) {
             window.currentPolygonsData = data;
-            plot_polygons(data);
+            plot_results(data);
 
             if (successCallback) {
                 successCallback();
@@ -207,38 +207,47 @@ function generate_and_plot_areas(
     });
 }
 
-function plot_polygons(polygonResults) {
+function plot_results(api_call_data) {
     // Accessible, distinct colours from https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/
-    let layerColours = ["#e6194B", "#4363d8", "#f58231", "#f032e6", "#469990", "#9A6324", "#800000", "#000075",
-        "#e6194B", "#4363d8"];
-    let distinctGreen = "#3cb44b";
+    let layer_colours = ["#e6194B", "#4363d8", "#f58231", "#f032e6", "#469990", "#9A6324", "#800000", "#000075"];
+    let result_green = "#3cb44b";
 
-    // plot_polygon(polygonResults, 'targetBoundingBox', layerColours.pop(), 0.1, false);
+    let current_colour = 1;
+    for (let key in api_call_data) {
+        // skip if the property is from prototype
+        if (!api_call_data.hasOwnProperty(key)) continue;
 
-    plot_polygon(polygonResults, 'walkingIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'cyclingIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'busIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'coachIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'trainIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'drivingIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'radiusIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'preSimplify', layerColours.pop(), 0.3, false);
+        let single_result = api_call_data[key];
 
-    plot_polygon(polygonResults, 'combinedTransportIsochrone', layerColours.pop(), 0.3, false);
-    plot_polygon(polygonResults, 'imdFilterLimited', layerColours.pop(), 0.3, false);
+        if (single_result.hasOwnProperty('polygon') && key !== "result_intersection") {
+            plot_polygon(key, single_result['label'], single_result['polygon'],
+                layer_colours[current_colour], 0.3, false
+            );
 
-    plot_polygon(polygonResults, 'combinedIntersection', distinctGreen, 0.7, true);
+            current_colour++;
+            if (current_colour >= layer_colours.length) {
+                current_colour = 0;
+            }
+        }
+    }
+
+    plot_polygon('result_intersection', api_call_data['result_intersection']['label'],
+        api_call_data['result_intersection']['polygon'], result_green, 0.7, true
+    );
 
     plot_marker(
-        polygonResults['target']['label'] + polygonResults['target']['coords'],
-        polygonResults['target']['coords']
+        api_call_data['target']['label'] + api_call_data['target']['coords'],
+        api_call_data['target']['coords']
     );
 
     $('#map-filter-menu').show();
 
-    map.fitBounds(polygonResults['targetBoundingBox']['bounds']);
+    if (api_call_data['combined_transport_box']) {
+        map.fitBounds(api_call_data['combined_transport_box']['bounds']);
+    }
+
     let centerOnce = function (e) {
-        map.panTo(polygonResults['target']['coords']);
+        map.panTo(api_call_data['target']['coords']);
         map.off('moveend', centerOnce);
     };
     map.on('moveend', centerOnce);
@@ -257,17 +266,11 @@ function plot_marker(label, coords) {
     window.mainMap.currentMarkers.push(targetMarker);
 }
 
-function plot_polygon(polygonObject, id, color, opacity = 0.3, visible = true) {
-    if (polygonObject[id] === undefined) {
-        return;
-    }
-
+function plot_polygon(id, label, polygon, color, opacity = 0.3, visible = true) {
     window.mainMap.currentLayers.push(id);
 
     let menuItem = $(
-        "<a href='#' style='background-color: " + color + "'>" +
-        polygonObject[id]['label'] +
-        "</a>"
+        "<a href='#' style='background-color: " + color + "'>" + label + "</a>"
     );
 
     if (visible) menuItem.addClass('active');
@@ -294,7 +297,7 @@ function plot_polygon(polygonObject, id, color, opacity = 0.3, visible = true) {
             'type': 'geojson',
             'data': {
                 'type': 'Feature',
-                'geometry': polygonObject[id]['polygon']
+                'geometry': polygon
             }
         },
         'layout': {

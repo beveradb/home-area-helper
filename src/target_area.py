@@ -5,15 +5,16 @@ import logging
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, mapping
 
+from run_server import cache
 from src import imd_tools
 from src import mapbox
 from src import multi_polygons
 from src import travel_time
-from src.multi_polygons import union_polygons
 from src.utils import timeit
 
 
 @timeit
+@cache.cached()
 def get_target_area_polygons(
         target_location_address: str,
         max_walking_time_mins: int,
@@ -37,173 +38,118 @@ def get_target_area_polygons(
     }
 
     travel_isochrones_to_combine = []
-    max_radius_polygon = None
+    max_radius_polygon = multi_polygons.get_bounding_circle_for_point(target_lng_lat, max_radius_miles)
 
-    if max_radius_miles > 0:
-        max_radius_polygon = multi_polygons.get_bounding_circle_for_point(target_lng_lat, max_radius_miles)
+    transport_modes = [
+        {"mode": "walking", "max_time": max_walking_time_mins, "label": '%s min Walk'},
+        {"mode": "cycling", "max_time": max_cycling_time_mins, "label": '%s min Cycle'},
+        {"mode": "bus", "max_time": max_bus_time_mins, "label": '%s min Bus'},
+        {"mode": "coach", "max_time": max_coach_time_mins, "label": '%s min Coach'},
+        {"mode": "train", "max_time": max_train_time_mins, "label": '%s min Train'},
+        {"mode": "driving", "max_time": max_driving_time_mins, "label": '%s min Drive'}
+    ]
 
-    if max_walking_time_mins > 0:
-        walking_isochrone_geom = mapbox.get_isochrone_geometry(
-            target_lng_lat, max_walking_time_mins, "walking"
-        )
+    for transport in transport_modes:
+        transport_poly = fetch_single_transport_mode_poly(
+            target_lng_lat, transport['mode'], transport['max_time'], max_radius_polygon)
 
-        walking_isochrone_polygon = Polygon(walking_isochrone_geom)
-        travel_isochrones_to_combine.append(walking_isochrone_polygon)
+        if transport_poly is not None:
+            travel_isochrones_to_combine.append(transport_poly)
 
-        return_object['walkingIsochrone'] = {
-            'label': str(max_walking_time_mins) + ' min Walk',
-            'polygon': walking_isochrone_polygon
-        }
+            return_object[transport['mode']] = {
+                'label': transport['label'] % str(transport['max_time']),
+                'polygon': transport_poly
+            }
 
-    if max_cycling_time_mins > 0:
-        pt_iso_geom = travel_time.get_public_transport_isochrone_geometry(
-            target_lng_lat, "cycling", max_cycling_time_mins)
-
-        pt_iso_geom = multi_polygons.convert_multi_to_single_with_joining_lines(
-            pt_iso_geom)
-
-        public_transport_isochrone_polygon = Polygon(pt_iso_geom)
-        travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
-
-        return_object['cyclingIsochrone'] = {
-            'label': str(max_cycling_time_mins) + ' min Cycling',
-            'polygon': public_transport_isochrone_polygon
-        }
-
-    if max_bus_time_mins > 0:
-        pt_iso_geom = travel_time.get_public_transport_isochrone_geometry(
-            target_lng_lat, "bus", max_bus_time_mins)
-
-        pt_iso_geom = multi_polygons.convert_multi_to_single_with_joining_lines(
-            pt_iso_geom)
-
-        public_transport_isochrone_polygon = Polygon(pt_iso_geom)
-        travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
-
-        return_object['busIsochrone'] = {
-            'label': str(max_bus_time_mins) + ' min Bus',
-            'polygon': public_transport_isochrone_polygon
-        }
-
-    if max_coach_time_mins > 0:
-        pt_iso_geom = travel_time.get_public_transport_isochrone_geometry(
-            target_lng_lat, "coach", max_coach_time_mins)
-
-        pt_iso_geom = multi_polygons.convert_multi_to_single_with_joining_lines(
-            pt_iso_geom)
-
-        public_transport_isochrone_polygon = Polygon(pt_iso_geom)
-        travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
-
-        return_object['coachIsochrone'] = {
-            'label': str(max_coach_time_mins) + ' min Coach',
-            'polygon': public_transport_isochrone_polygon
-        }
-
-    if max_train_time_mins > 0:
-        pt_iso_geom = travel_time.get_public_transport_isochrone_geometry(
-            target_lng_lat, "train", max_train_time_mins)
-
-        if hasattr(pt_iso_geom, 'geoms'):
-            logging.debug("Total polygons in train multipolygon: " + str(len(pt_iso_geom)))
-
-        if max_radius_polygon is not None:
-            filtered_multipolygon = []
-            for single_polygon in pt_iso_geom:
-                single_polygon = Polygon(single_polygon)
-                if max_radius_polygon.contains(single_polygon.representative_point()):
-                    filtered_multipolygon.append(single_polygon)
-            pt_iso_geom = union_polygons(filtered_multipolygon)
-
-            if hasattr(pt_iso_geom, 'geoms'):
-                logging.debug("Total polygons in train multipolygon after radius filter: " + str(len(pt_iso_geom)))
-
-        pt_iso_geom = multi_polygons.convert_multi_to_single_with_joining_lines(pt_iso_geom)
-
-        public_transport_isochrone_polygon = Polygon(pt_iso_geom)
-        travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
-
-        return_object['trainIsochrone'] = {
-            'label': str(max_train_time_mins) + ' min Train',
-            'polygon': public_transport_isochrone_polygon
-        }
-
-    if max_driving_time_mins > 0:
-        driving_isochrone_geom = travel_time.get_public_transport_isochrone_geometry(
-            target_lng_lat, "driving", max_driving_time_mins)
-
-        driving_isochrone_geom = multi_polygons.convert_multi_to_single_with_joining_lines(
-            driving_isochrone_geom)
-
-        driving_isochrone_polygon = Polygon(driving_isochrone_geom)
-        travel_isochrones_to_combine.append(driving_isochrone_polygon)
-
-        return_object['drivingIsochrone'] = {
-            'label': str(max_driving_time_mins) + ' min Drive',
-            'polygon': driving_isochrone_polygon
-        }
-
-    combined_iso_poly = multi_polygons.convert_multi_to_single_with_joining_lines(
+    combined_transport_poly = multi_polygons.join_multi_to_single_poly(
         travel_isochrones_to_combine
     )
 
-    return_object['combinedTransportIsochrone'] = {
-        'label': 'Combined Transport',
-        'polygon': combined_iso_poly
-    }
+    if combined_transport_poly is not list:
+        # Buffer to remove any self-intersections
+        combined_transport_poly = combined_transport_poly.buffer(0.00001)
 
-    if max_radius_polygon is not None:
-        combined_iso_poly = combined_iso_poly.intersection(max_radius_polygon)
-
-        return_object['radiusIsochrone'] = {
-            'label': str(max_radius_miles) + ' mile Radius',
-            'polygon': max_radius_polygon
+        return_object['combined_transport'] = {
+            'label': 'Combined Transport',
+            'polygon': combined_transport_poly
         }
 
-    target_bounding_box_poly = Polygon.from_bounds(*combined_iso_poly.bounds).buffer(0.001)
-    return_object['targetBoundingBox'] = {
-        'label': 'Bounding Box',
-        'polygon': target_bounding_box_poly,
-        'bounds': target_bounding_box_poly.bounds
-    }
+        if max_radius_polygon is not None:
+            combined_transport_poly = combined_transport_poly.intersection(max_radius_polygon)
 
-    combined_intersection_polygon = combined_iso_poly
+            return_object['radius'] = {
+                'label': str(max_radius_miles) + ' mile Radius',
+                'polygon': max_radius_polygon
+            }
 
-    if min_deprivation_score > 0:
-        imd_filter_limited_polygon = imd_tools.get_simplified_clipped_uk_deprivation_polygon(
-            min_deprivation_score, target_bounding_box_poly
-        )
-
-        return_object['imdFilterLimited'] = {
-            'label': 'Deprivation Score > ' + str(min_deprivation_score),
-            'polygon': imd_filter_limited_polygon
+        combined_transport_box_poly = Polygon.from_bounds(*combined_transport_poly.bounds).buffer(0.001)
+        return_object['combined_transport_box'] = {
+            'label': 'Transport Bounding Box',
+            'polygon': combined_transport_box_poly,
+            'bounds': combined_transport_box_poly.bounds
         }
 
-        combined_iso_poly = combined_iso_poly.buffer(0.00001)
-        imd_filter_limited_polygon = imd_filter_limited_polygon.buffer(0.00001)
-        combined_intersection_polygon = combined_iso_poly.intersection(imd_filter_limited_polygon)
+        if min_deprivation_score > 0:
+            imd_filter_limited_polygon = imd_tools.get_simplified_clipped_uk_deprivation_polygon(
+                min_deprivation_score, combined_transport_box_poly
+            )
 
-        combined_intersection_polygon = multi_polygons.convert_multi_to_single_with_joining_lines(
-            combined_intersection_polygon)
+            return_object['deprivation'] = {
+                'label': 'Deprivation Score > ' + str(min_deprivation_score),
+                'polygon': imd_filter_limited_polygon
+            }
 
-    if simplify_factor > 0:
-        return_object['preSimplify'] = {
-            'label': 'Result pre-simplify: ' + str(simplify_factor),
-            'polygon': combined_intersection_polygon
+            imd_filter_limited_polygon = imd_filter_limited_polygon.buffer(0.00001)
+            result_intersection = combined_transport_poly.intersection(imd_filter_limited_polygon)
+
+            result_intersection = multi_polygons.join_multi_to_single_poly(result_intersection)
+        else:
+            result_intersection = combined_transport_poly
+
+        if simplify_factor > 0:
+            return_object['pre_simplify_result'] = {
+                'label': 'Result pre-simplify: ' + str(simplify_factor),
+                'polygon': result_intersection
+            }
+
+            # Simplify resulting polygon somewhat as URL can't be too long or Zoopla throws HTTP 414 error
+            result_intersection = result_intersection.simplify(simplify_factor)
+
+        return_object['result_intersection'] = {
+            'label': 'Combined Result',
+            'polygon': result_intersection
         }
-
-        # Simplify resulting polygon somewhat as URL can't be too long or Zoopla throws HTTP 414 error
-        combined_intersection_polygon = combined_intersection_polygon.simplify(simplify_factor)
-
-    return_object['combinedIntersection'] = {
-        'label': 'Combined Result',
-        'polygon': combined_intersection_polygon
-    }
 
     return return_object
 
 
 @timeit
+@cache.cached()
+def fetch_single_transport_mode_poly(target_lng_lat, mode, max_time_mins, filter_polygon=None):
+    if max_time_mins > 0:
+        transport_poly = travel_time.get_public_transport_isochrone_geometry(target_lng_lat, mode, max_time_mins)
+
+        poly_len = 1
+        if hasattr(transport_poly, '__len__'):
+            poly_len = len(transport_poly)
+
+        logging.debug("Total polygons in " + mode + " multipolygon: " + str(poly_len))
+
+        if filter_polygon is not None:
+            transport_poly = multi_polygons.filter_multipoly_by_polygon(transport_poly, filter_polygon)
+
+        if hasattr(transport_poly, '__len__') and len(transport_poly) > 0:
+            transport_poly = multi_polygons.join_multi_to_single_poly(transport_poly)
+            return transport_poly
+
+        if type(transport_poly) is Polygon:
+            return transport_poly
+
+    return None
+
+
+@timeit
+@cache.cached()
 def get_target_area_polygons_json(params: dict):
     polygon_results = get_target_area_polygons(
         target_location_address=str(params['target']),
@@ -227,6 +173,7 @@ def get_target_area_polygons_json(params: dict):
 
 
 @timeit
+@cache.cached()
 def plot_target_area_polygons_mpl(intersection_results):
     for key, value in intersection_results.items():
         if 'polygon' in value:

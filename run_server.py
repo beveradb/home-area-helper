@@ -2,6 +2,7 @@
 import logging
 import os
 
+import ucache
 from flask import Flask, render_template, Response, request
 
 from src import target_area, utils
@@ -10,12 +11,15 @@ app = Flask(__name__)
 
 # Set up debug logging to console
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
+
+# Set up disk caching for complex computations, with max size 5GB and 1 year expiry
+cache = ucache.SqliteCache(filename='compute_cache.sqlite', cache_size=5000, timeout=32000000)
 
 
 @app.route('/')
 def index():
-    # This script requires you have environment variables set with your personal API keys:
+    # This script requires you define environment variables with your personal API keys:
     # MAPBOX_ACCESS_TOKEN from https://docs.mapbox.com/help/how-mapbox-works/access-tokens/
     # TRAVELTIME_APP_ID from https://docs.traveltimeplatform.com/overview/introduction
     # TRAVELTIME_API_KEY from https://docs.traveltimeplatform.com/overview/introduction

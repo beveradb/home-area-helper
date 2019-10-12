@@ -57,7 +57,7 @@ def get_simplified_clipped_uk_deprivation_polygon(min_deprivation_score, boundin
     # logging.debug("imdFilterMultiPolygons after bounds filter: " + str(len(imdFilterMultiPolygon)))
 
     imd_filter_multi_polygon = multi_polygons.simplify_multi(imd_filter_multi_polygon, 0.001)
-    imd_filter_combined_polygon = multi_polygons.convert_multi_to_single_with_joining_lines(imd_filter_multi_polygon)
+    imd_filter_combined_polygon = multi_polygons.join_multi_to_single_poly(imd_filter_multi_polygon)
 
     u_kto_w_g_s84_project = partial(pyproj.transform, pyproj.Proj(init='epsg:27700'), pyproj.Proj(init='epsg:4326'))
 

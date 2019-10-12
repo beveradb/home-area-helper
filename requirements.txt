@@ -1,3 +1,5 @@
+ucache
+peewee
 ratelimit
 requests
 yappi

@@ -7,11 +7,26 @@ import shapely.ops
 from shapely.affinity import scale
 from shapely.geometry import Point, MultiPoint, Polygon, LineString
 
+from run_server import cache
 from src.utils import timeit
 
 
 @timeit
+@cache.cached()
+def get_bounding_square_for_point(target_lng_lat, bounding_box_radius_miles):
+    if bounding_box_radius_miles == 0:
+        return None
+
+    circle = get_bounding_circle_for_point(target_lng_lat, bounding_box_radius_miles)
+    return Polygon.from_bounds(*circle.bounds).simplify(0.00001)
+
+
+@timeit
+@cache.cached()
 def get_bounding_circle_for_point(target_lng_lat, bounding_box_radius_miles):
+    if bounding_box_radius_miles == 0:
+        return None
+
     # This is an ugly and inaccurate approximation of miles->degrees to avoid implementing a proper projection
     # It's good enough for now, and much easier than proper projection
     buffer_distance_degrees = bounding_box_radius_miles / 50
@@ -24,6 +39,7 @@ def get_bounding_circle_for_point(target_lng_lat, bounding_box_radius_miles):
 
 
 @timeit
+@cache.cached()
 def filter_uk_multipoly_by_target_radius(multi_polygon_to_filter, target_lng_lat, max_distance_limit_miles):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
     multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
@@ -42,6 +58,7 @@ def filter_uk_multipoly_by_target_radius(multi_polygon_to_filter, target_lng_lat
 
 
 @timeit
+@cache.cached()
 def filter_uk_multipoly_by_bounding_box(multi_polygon_to_filter, wgs84_bounding_polygon):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
     multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
@@ -58,6 +75,7 @@ def filter_uk_multipoly_by_bounding_box(multi_polygon_to_filter, wgs84_bounding_
 
 
 @timeit
+@cache.cached()
 def simplify_multi(multi_polygon_to_simplify, simplification_factor):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
     multi_polygon_to_simplify = convert_list_to_multi_polygon(multi_polygon_to_simplify)
@@ -77,21 +95,23 @@ def simplify_multi(multi_polygon_to_simplify, simplification_factor):
 
 
 @timeit
-def convert_multi_to_single_with_joining_lines(multi_polygon_to_join):
-    # logging.debug("convert_multi_to_single_with_joining_lines called with " + str(type(multi_polygon_to_join)))
+@cache.cached()
+def join_multi_to_single_poly(multi_polygon_to_join):
+    # logging.debug("join_multi_to_single_poly called with " + str(type(multi_polygon_to_join)))
 
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
     multi_polygon_to_join = convert_list_to_multi_polygon(multi_polygon_to_join)
 
     # Recursively join all polygons in this multipolygon with lines until it's no longer a multipolygon
     # If the object doesn't have a "geoms" property, it must already be a single Polygon object anyway
-    while hasattr(multi_polygon_to_join, 'geoms'):
+    while hasattr(multi_polygon_to_join, 'geoms') and len(multi_polygon_to_join) > 0:
         multi_polygon_to_join = join_multi_with_connecting_lines(multi_polygon_to_join)
 
     return multi_polygon_to_join
 
 
 @timeit
+@cache.cached()
 def join_multi_with_connecting_lines(multi_polygon_to_join):
     # logging.debug("join_multi_with_connecting_lines called with " + str(type(multi_polygon_to_join)))
 
@@ -119,6 +139,7 @@ def join_multi_with_connecting_lines(multi_polygon_to_join):
 
 
 @timeit
+@cache.cached()
 def get_connecting_lines_for_multi(multi_polygon_to_join):
     # logging.debug("get_connecting_lines_for_multi called with " + str(type(multi_polygon_to_join)))
 
@@ -168,6 +189,7 @@ def get_line_connecting_single_polygon_to_others(single_polygon, other_polygons)
 
 
 @timeit
+@cache.cached()
 def get_nearest_points_between_polygon_and_others(single_polygon, other_polygons):
     this_polygon_multipoint = MultiPoint(single_polygon.exterior.coords)
 
@@ -178,6 +200,7 @@ def get_nearest_points_between_polygon_and_others(single_polygon, other_polygons
 
 
 @timeit
+@cache.cached()
 def get_nearest_polygon_from_list(single_polygon, other_polygons):
     other_centroids_multipoint = MultiPoint([o.centroid for o in other_polygons])
 
@@ -191,6 +214,7 @@ def get_nearest_polygon_from_list(single_polygon, other_polygons):
 
 
 @timeit
+@cache.cached()
 def get_multipoint_for_all_polygons_coords(polygons_list):
     coords_list = []
     if type(polygons_list) is Polygon:
@@ -211,6 +235,7 @@ def get_connecting_line_polygon(point_1, point_2):
 
 
 @timeit
+@cache.cached()
 def convert_list_to_multi_polygon(multi_polygon_list):
     # logging.debug("convert_list_to_multi_polygon called with " + str(type(multi_polygon_list)))
 
@@ -225,6 +250,32 @@ def convert_list_to_multi_polygon(multi_polygon_list):
 
 
 @timeit
+@cache.cached()
+def filter_multipoly_by_polygon(multi_polygon_to_filter, filter_polygon):
+    multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
+
+    if hasattr(multi_polygon_to_filter, 'geoms'):
+        logging.debug("Length of MultiPolygon before filter: " + str(len(multi_polygon_to_filter.geoms)))
+
+        filtered_polygons_list = []
+        for single_polygon in multi_polygon_to_filter:
+            if filter_polygon.contains(single_polygon.representative_point()):
+                filtered_polygons_list.append(single_polygon)
+
+        multi_polygon_to_filter = union_polygons(filtered_polygons_list)
+
+        if hasattr(multi_polygon_to_filter, 'geoms'):
+            new_length = len(multi_polygon_to_filter.geoms)
+        else:
+            new_length = 1
+
+        logging.debug("Length of MultiPolygon after filter: " + str(new_length))
+
+    return multi_polygon_to_filter
+
+
+@timeit
+@cache.cached()
 def refine_polygons(polygons_list):
     # For each polygon in the list, ensure it is actually a Polygon object and buffer to remove self-intersections
     for key, single_polygon in enumerate(polygons_list):

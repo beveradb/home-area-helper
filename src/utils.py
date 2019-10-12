@@ -49,7 +49,7 @@ def log_method_timings():
     global methods_timings_cumulative
     for key in sorted(methods_timings_cumulative.keys()):
         if methods_timings_cumulative[key]['time'] > 200:
-            logging.debug('SLOW: %s - calls: %1.0f - time: %1.0f ms' % (
+            logging.warning('SLOW: %s - calls: %1.0f - time: %1.0f ms' % (
                 key,
                 methods_timings_cumulative[key]['calls'],
                 methods_timings_cumulative[key]['time']
