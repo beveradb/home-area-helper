@@ -90,7 +90,7 @@ function map_loaded(map) {
                 $('#errorModalTitle').text("Server Error");
                 let errorFrame = $("<iframe class='errorFrame'></iframe>");
                 errorFrame.attr('srcdoc', jqXHR.responseText);
-                $('#errorModalBody').append(errorFrame);
+                $('#errorModalBody').empty().append(errorFrame);
                 $('#errorModal').modal();
 
                 $("#generateButton").show();
@@ -171,27 +171,38 @@ function generate_and_plot_areas(
     if (!maxRadiusInput) maxRadiusInput = 0;
     if (!simplifyFactorInput) simplifyFactorInput = 0;
 
-    let polygonURL = "/target_area/" + encodeURIComponent(targetAddress);
-    polygonURL += "/" + encodeURIComponent(maxWalkingTime);
-    polygonURL += "/" + encodeURIComponent(maxCyclingTime);
-    polygonURL += "/" + encodeURIComponent(maxBusTime);
-    polygonURL += "/" + encodeURIComponent(maxCoachTime);
-    polygonURL += "/" + encodeURIComponent(maxTrainTime);
-    polygonURL += "/" + encodeURIComponent(maxDrivingTime);
-    polygonURL += "/" + encodeURIComponent(minIMDInput);
-    polygonURL += "/" + encodeURIComponent(parseFloat(maxRadiusInput).toFixed(8));
-    polygonURL += "/" + encodeURIComponent(parseFloat(simplifyFactorInput).toFixed(8));
+    let targetAreaURL = "/target_area";
+    let singleTargetData = {
+        target: targetAddress,
+        walking: maxWalkingTime,
+        cycling: maxCyclingTime,
+        bus: maxBusTime,
+        coach: maxCoachTime,
+        train: maxTrainTime,
+        driving: maxDrivingTime,
+        deprivation: minIMDInput,
+        radius: parseFloat(maxRadiusInput).toFixed(8),
+        simplify: parseFloat(simplifyFactorInput).toFixed(8)
+    };
+    let allTargetsData = [singleTargetData];
 
-    $.getJSON(polygonURL, function (data) {
-        window.currentPolygonsData = data;
-        plot_polygons(data);
+    $.ajax({
+        url: targetAreaURL,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(allTargetsData),
+        success: function (data) {
+            window.currentPolygonsData = data;
+            plot_polygons(data);
 
-        if (successCallback) {
-            successCallback();
-        }
-    }).fail(function (jqXHR, textStatus) {
-        if (errorCallback) {
-            errorCallback(jqXHR, textStatus);
+            if (successCallback) {
+                successCallback();
+            }
+        },
+        error: function (jqXHR, textStatus) {
+            if (errorCallback) {
+                errorCallback(jqXHR, textStatus);
+            }
         }
     });
 }

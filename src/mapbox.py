@@ -1,16 +1,31 @@
 #!/usr/bin/env python3
-import datetime
-import json
+import logging
 import os
 import time
-import urllib.request
 import webbrowser
 
 import jinja2
+from backoff import on_exception, expo
 from mapbox import Geocoder
+from ratelimit import RateLimitException, limits
 from shapely.geometry import Polygon
 
-from src.timeit import timeit
+from src.utils import timeit, cached_requests
+
+
+@timeit
+@on_exception(expo, RateLimitException, max_tries=10)  # Backoff exponentially and retry if rate limit hit
+@limits(calls=300, period=60)  # Mapbox allow 300 (!) requests per minute
+def call_mapbox_api(url):
+    response = cached_requests.get(url)
+
+    if response.from_cache:
+        logging.log(logging.DEBUG,
+                    'Cache HIT - this response was fetched from the local SQLite DB without a new API call')
+    else:
+        logging.debug('Cache MISS - this response required a new API call')
+
+    return response
 
 
 @timeit
@@ -28,22 +43,16 @@ def get_isochrone_geometry(target_lng_lat, max_travel_time_mins, travel_mode):
     isochrone_url += "?contours_minutes=" + str(max_travel_time_mins)
     isochrone_url += "&access_token=" + os.environ['MAPBOX_ACCESS_TOKEN']
 
-    print('[%s] Making HTTP request to Mapbox API for mode: %s with mins: %1.0f' % (
-        datetime.datetime.utcnow().strftime("%d/%b/%Y %H:%I:%S"),
+    logging.debug('Making HTTP request to Mapbox API for mode: %s with mins: %1.0f' % (
         travel_mode,
         int(max_travel_time_mins)
     ))
 
-    walking_isochrone_response_object = json.load(
-        urllib.request.urlopen(isochrone_url)
-    )
+    json_response = call_mapbox_api(isochrone_url).json()
 
-    coords = walking_isochrone_response_object['features'][0]['geometry']['coordinates']
+    coords = json_response['features'][0]['geometry']['coordinates']
 
-    print('[%s] Received response from Mapbox API with coords: %1.0f' % (
-        datetime.datetime.utcnow().strftime("%d/%b/%Y %H:%I:%S"),
-        len(coords)
-    ))
+    logging.debug('Received response from Mapbox API with coords: %1.0f' % len(coords))
 
     return coords
 

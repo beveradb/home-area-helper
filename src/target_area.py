@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
+import json
+import logging
 
 import matplotlib.pyplot as plt
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, mapping
 
-from src import deprivation
+from src import imd_tools
 from src import mapbox
 from src import multi_polygons
 from src import travel_time
-from src.timeit import timeit
+from src.multi_polygons import union_polygons
+from src.utils import timeit
 
 
 @timeit
@@ -34,6 +37,10 @@ def get_target_area_polygons(
     }
 
     travel_isochrones_to_combine = []
+    max_radius_polygon = None
+
+    if max_radius_miles > 0:
+        max_radius_polygon = multi_polygons.get_bounding_circle_for_point(target_lng_lat, max_radius_miles)
 
     if max_walking_time_mins > 0:
         walking_isochrone_geom = mapbox.get_isochrone_geometry(
@@ -44,7 +51,7 @@ def get_target_area_polygons(
         travel_isochrones_to_combine.append(walking_isochrone_polygon)
 
         return_object['walkingIsochrone'] = {
-            'label': str(max_walking_time_mins) + 'min Walk',
+            'label': str(max_walking_time_mins) + ' min Walk',
             'polygon': walking_isochrone_polygon
         }
 
@@ -59,7 +66,7 @@ def get_target_area_polygons(
         travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
 
         return_object['cyclingIsochrone'] = {
-            'label': str(max_cycling_time_mins) + 'min Cycling',
+            'label': str(max_cycling_time_mins) + ' min Cycling',
             'polygon': public_transport_isochrone_polygon
         }
 
@@ -74,7 +81,7 @@ def get_target_area_polygons(
         travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
 
         return_object['busIsochrone'] = {
-            'label': str(max_bus_time_mins) + 'min Bus',
+            'label': str(max_bus_time_mins) + ' min Bus',
             'polygon': public_transport_isochrone_polygon
         }
 
@@ -89,7 +96,7 @@ def get_target_area_polygons(
         travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
 
         return_object['coachIsochrone'] = {
-            'label': str(max_coach_time_mins) + 'min Coach',
+            'label': str(max_coach_time_mins) + ' min Coach',
             'polygon': public_transport_isochrone_polygon
         }
 
@@ -97,14 +104,27 @@ def get_target_area_polygons(
         pt_iso_geom = travel_time.get_public_transport_isochrone_geometry(
             target_lng_lat, "train", max_train_time_mins)
 
-        pt_iso_geom = multi_polygons.convert_multi_to_single_with_joining_lines(
-            pt_iso_geom)
+        if hasattr(pt_iso_geom, 'geoms'):
+            logging.debug("Total polygons in train multipolygon: " + str(len(pt_iso_geom)))
+
+        if max_radius_polygon is not None:
+            filtered_multipolygon = []
+            for single_polygon in pt_iso_geom:
+                single_polygon = Polygon(single_polygon)
+                if max_radius_polygon.contains(single_polygon.representative_point()):
+                    filtered_multipolygon.append(single_polygon)
+            pt_iso_geom = union_polygons(filtered_multipolygon)
+
+            if hasattr(pt_iso_geom, 'geoms'):
+                logging.debug("Total polygons in train multipolygon after radius filter: " + str(len(pt_iso_geom)))
+
+        pt_iso_geom = multi_polygons.convert_multi_to_single_with_joining_lines(pt_iso_geom)
 
         public_transport_isochrone_polygon = Polygon(pt_iso_geom)
         travel_isochrones_to_combine.append(public_transport_isochrone_polygon)
 
         return_object['trainIsochrone'] = {
-            'label': str(max_train_time_mins) + 'min Train',
+            'label': str(max_train_time_mins) + ' min Train',
             'polygon': public_transport_isochrone_polygon
         }
 
@@ -119,7 +139,7 @@ def get_target_area_polygons(
         travel_isochrones_to_combine.append(driving_isochrone_polygon)
 
         return_object['drivingIsochrone'] = {
-            'label': str(max_driving_time_mins) + 'min Drive',
+            'label': str(max_driving_time_mins) + ' min Drive',
             'polygon': driving_isochrone_polygon
         }
 
@@ -132,13 +152,11 @@ def get_target_area_polygons(
         'polygon': combined_iso_poly
     }
 
-    if max_radius_miles > 0:
-        max_radius_polygon = multi_polygons.get_bounding_circle_for_point(target_lng_lat, max_radius_miles)
-
+    if max_radius_polygon is not None:
         combined_iso_poly = combined_iso_poly.intersection(max_radius_polygon)
 
         return_object['radiusIsochrone'] = {
-            'label': str(max_radius_miles) + 'mile radius',
+            'label': str(max_radius_miles) + ' mile Radius',
             'polygon': max_radius_polygon
         }
 
@@ -152,7 +170,7 @@ def get_target_area_polygons(
     combined_intersection_polygon = combined_iso_poly
 
     if min_deprivation_score > 0:
-        imd_filter_limited_polygon = deprivation.get_simplified_clipped_uk_deprivation_polygon(
+        imd_filter_limited_polygon = imd_tools.get_simplified_clipped_uk_deprivation_polygon(
             min_deprivation_score, target_bounding_box_poly
         )
 
@@ -183,6 +201,29 @@ def get_target_area_polygons(
     }
 
     return return_object
+
+
+@timeit
+def get_target_area_polygons_json(params: dict):
+    polygon_results = get_target_area_polygons(
+        target_location_address=str(params['target']),
+        min_deprivation_score=int(params['deprivation']),
+        max_walking_time_mins=int(params['walking']),
+        max_cycling_time_mins=int(params['cycling']),
+        max_bus_time_mins=int(params['bus']),
+        max_coach_time_mins=int(params['coach']),
+        max_train_time_mins=int(params['train']),
+        max_driving_time_mins=int(params['driving']),
+        max_radius_miles=float(params['radius']),
+        simplify_factor=float(params['simplify'])
+    )
+
+    # Convert all of the response Polygon objects to GeoJSON
+    for key, value in polygon_results.items():
+        if 'polygon' in value:
+            polygon_results[key]['polygon'] = mapping(value['polygon'])
+
+    return json.dumps(polygon_results)
 
 
 @timeit

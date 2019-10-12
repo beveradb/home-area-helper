@@ -86,8 +86,6 @@ body, html {
     z-index: 1;
     top: 10px;
     right: 10px;
-    width: 30%;
-    max-width: 300px;
     -webkit-box-shadow: 0px 0px 25px 2px rgba(0, 0, 0, 0.6);
     -moz-box-shadow: 0px 0px 25px 2px rgba(0, 0, 0, 0.6);
     box-shadow: 0px 0px 25px 2px rgba(0, 0, 0, 0.6);
@@ -98,7 +96,7 @@ body, html {
     color: #ffffff;
     display: block;
     margin: 0;
-    padding: 10px;
+    padding: 7px 20px;
     text-decoration: none;
     border-bottom: 1px solid rgba(0, 0, 0, 0.25);
     text-align: center;
