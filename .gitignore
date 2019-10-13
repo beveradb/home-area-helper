@@ -6,3 +6,4 @@ __pycache__
 .idea
 api_cache.sqlite
 compute_cache.*
+datasets/cache.*
