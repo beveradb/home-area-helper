@@ -37,7 +37,7 @@ def target_area_json():
 
     logging.log(logging.INFO, "Request received: " + str(req_data))
 
-    results = target_area.get_target_area_polygons_json(req_data[0])
+    results = target_area.get_target_areas_polygons_json(req_data)
 
     # func_stats = yappi.get_func_stats()
     # func_stats.save('callgrind.out.' + str(time.time()), 'CALLGRIND')

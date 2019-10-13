@@ -149,27 +149,39 @@ def fetch_single_transport_mode_poly(target_lng_lat, mode, max_time_mins, filter
 
 
 @timeit
-@cache.cached()
-def get_target_area_polygons_json(params: dict):
-    polygon_results = get_target_area_polygons(
-        target_location_address=str(params['target']),
-        min_deprivation_score=int(params['deprivation']),
-        max_walking_time_mins=int(params['walking']),
-        max_cycling_time_mins=int(params['cycling']),
-        max_bus_time_mins=int(params['bus']),
-        max_coach_time_mins=int(params['coach']),
-        max_train_time_mins=int(params['train']),
-        max_driving_time_mins=int(params['driving']),
-        max_radius_miles=float(params['radius']),
-        simplify_factor=float(params['simplify'])
-    )
+def get_target_areas_polygons_json(targets_params: list):
+    response_object = {
+        'targets_results': [],
+        'result_intersection': None
+    }
+    intersections_to_combine = []
 
-    # Convert all of the response Polygon objects to GeoJSON
-    for key, value in polygon_results.items():
-        if 'polygon' in value:
-            polygon_results[key]['polygon'] = mapping(value['polygon'])
+    for target_index, params in enumerate(targets_params):
+        target_results = get_target_area_polygons(
+            target_location_address=str(params['target']),
+            min_deprivation_score=int(params['deprivation']),
+            max_walking_time_mins=int(params['walking']),
+            max_cycling_time_mins=int(params['cycling']),
+            max_bus_time_mins=int(params['bus']),
+            max_coach_time_mins=int(params['coach']),
+            max_train_time_mins=int(params['train']),
+            max_driving_time_mins=int(params['driving']),
+            max_radius_miles=float(params['radius']),
+            simplify_factor=float(params['simplify'])
+        )
 
-    return json.dumps(polygon_results)
+        # Convert all of the response Polygon objects to GeoJSON
+        for key, value in target_results.items():
+            if 'polygon' in value:
+                target_results[key]['polygon'] = mapping(value['polygon'])
+
+        response_object['targets_results'].append(target_results)
+
+        intersections_to_combine.append(target_results['result_intersection'])
+
+    # Add result_intersection to response object, with bounds and centroid
+
+    return json.dumps(response_object)
 
 
 @timeit

@@ -284,44 +284,52 @@ function plot_results(api_call_data) {
     let result_green = "#3cb44b";
 
     let current_colour = 1;
-    for (let key in api_call_data) {
-        if (!api_call_data.hasOwnProperty(key)) continue;
+    let all_targets_results = api_call_data['targets_results'];
 
-        let single_result = api_call_data[key];
+    all_targets_results.forEach(function (target_results, target_index) {
+        let target_prefix = "#" + (target_index + 1) + ": ";
+        for (let key in target_results) {
+            if (!target_results.hasOwnProperty(key)) continue;
 
-        if (single_result.hasOwnProperty('polygon') && key !== "result_intersection") {
-            plot_polygon(key, single_result['label'], single_result['polygon'],
-                layer_colours[current_colour], 0.3, false
-            );
+            let single_result = target_results[key];
 
-            current_colour++;
-            if (current_colour >= layer_colours.length) {
-                current_colour = 0;
+            if (single_result.hasOwnProperty('polygon') && key !== "result_intersection") {
+                plot_polygon(
+                    key + "-" + target_index,
+                    target_prefix + single_result['label'],
+                    single_result['polygon'],
+                    layer_colours[current_colour], 0.3, false
+                );
+
+                current_colour++;
+                if (current_colour >= layer_colours.length) {
+                    current_colour = 0;
+                }
             }
         }
-    }
 
-    plot_polygon('result_intersection', api_call_data['result_intersection']['label'],
-        api_call_data['result_intersection']['polygon'], result_green, 0.7, true
-    );
+        plot_marker(
+            target_prefix + target_results['target']['label'] + target_results['target']['coords'],
+            target_results['target']['coords']
+        );
+    });
 
-    plot_marker(
-        api_call_data['target']['label'] + api_call_data['target']['coords'],
-        api_call_data['target']['coords']
-    );
 
     $('#map-filter-menu').show();
 
-    if (api_call_data['combined_transport_box']) {
-        map.fitBounds(api_call_data['combined_transport_box']['bounds']);
+    if (api_call_data['result_intersection']) {
+        plot_polygon('result_intersection', api_call_data['result_intersection']['label'],
+            api_call_data['result_intersection']['polygon'], result_green, 0.7, true
+        );
+
+        map.fitBounds(api_call_data['result_intersection']['bounds']);
+
+        let centerOnce = function (e) {
+            map.panTo(api_call_data['result_intersection']['centroid']);
+            map.off('moveend', centerOnce);
+        };
+        map.on('moveend', centerOnce);
     }
-
-    let centerOnce = function (e) {
-        map.panTo(api_call_data['target']['coords']);
-        map.off('moveend', centerOnce);
-    };
-    map.on('moveend', centerOnce);
-
 }
 
 function plot_marker(label, coords) {
