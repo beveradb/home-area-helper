@@ -27,104 +27,171 @@
     <div class="row h-100">
         <div id="controls" class="col-12 col-md-4">
             <div class="jumbotron">
-                <h1 class="display-4">Home Area Helper</h1>
-                <p class="lead">Build property search filters/alerts based on target destination walk/bus/drive time and
+                <h1>Home Area Helper</h1>
+                <p class="lead">Build property search area alerts based on target destination travel time and
                     area deprivation.</p>
             </div>
             <form id="generateSearchAreaForm">
+                <div class="accordion form-group" id="targetsAccordion">
+                    <div class="card" id="targetCardTemplate" data-targetkey="0" style="display: none">
+                        <div class="card-header">
+                            <h2 class="mb-0">
+                                <button class="btn btn-link btn-block" type="button" data-toggle="collapse"
+                                        aria-expanded="true">
+                                    Target Destination #
+                                </button>
+                            </h2>
+                        </div>
+                        <div class="collapse" data-parent="#targetsAccordion">
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <div class="form-group col-12">
+                                            <label for="targetAddressInput">Target Address</label>
+                                            <input type="text" class="form-control targetAddressInput"
+                                                   placeholder="" required>
+                                            <small class="form-text text-muted">
+                                                Destination address for travel time
+                                                calculations - e.g. workplace, city center, family home</small>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxWalkingTimeInput">Walking (mins)</label>
+                                            <input type="number" class="form-control maxWalkingTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxCyclingTimeInput">Cycling (mins)</label>
+                                            <input type="number" class="form-control maxCyclingTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxBusTimeInput">Bus (mins)</label>
+                                            <input type="number" class="form-control maxBusTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxCoachTimeInput">Coach (mins)</label>
+                                            <input type="number" class="form-control maxCoachTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxTrainTimeInput">Train (mins)</label>
+                                            <input type="number" class="form-control maxTrainTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxDrivingTimeInput">Driving (mins)</label>
+                                            <input type="number" class="form-control maxDrivingTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12">
+                                            <small id="maxTransportTimeHelp" class="form-text text-muted">
+                                                Maximum journey time to consider for each method of transport, in
+                                                minutes.<br/>
+                                                Leave blank to exclude if you won't travel by one of these methods.<br/>
+                                                These are <i>combined</i>, so if you can reach your target by any mode,
+                                                it'll be included.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-12 col-xl-6">
+                                            <label for="maxRadiusInput">Maximum Radius (miles)</label>
+                                            <input type="number" class="form-control maxRadiusInput"
+                                                   placeholder="" step="0.01">
+                                            <small id="maxRadiusHelp" class="form-text text-muted">
+                                                Limit resulting shape to max radius. May hep filter out outliers.
+                                            </small>
+                                        </div>
+                                        <div class="form-group col-12 col-xl-6">
+                                            <label for="minAreaRadiusInput">Minimum Area (miles)</label>
+                                            <input type="number" class="form-control minAreaRadiusInput"
+                                                   placeholder="" step="0.0000001">
+                                            <small id="minAreaRadiusInputHelp" class="form-text text-muted">
+                                                Exclude small, separated areas. May hep filter out outliers.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-12 col-xl-6">
+                                            <label for="simplifyFactorInput">Simplify (degrees)</label>
+                                            <input type="number" class="form-control simplifyFactorInput"
+                                                   placeholder="" max="0.1" step="0.00000001" value="0.005">
+                                            <small id="simplifyFactorInputHelp" class="form-text text-muted">
+                                                Simplify resulting shape (e.g. 0.01). May help shorten long Zoopla URL.
+                                            </small>
+                                        </div>
+                                        <div class="form-group col-12 col-xl-6">
+                                            <label for="bufferFactorInput">Buffer (degrees)</label>
+                                            <input type="number" class="form-control bufferFactorInput"
+                                                   placeholder="" max="0.1" step="0.00000001" value="0.005">
+                                            <small id="bufferFactorInputHelp" class="form-text text-muted">
+                                                Buffer resulting shape (e.g. 0.01). May help shorten long Zoopla URL.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-12">
+                                            <label for="minIMDInput">Minimum Deprivation Rank (1-10)</label>
+                                            <input type="number" class="form-control minIMDInput"
+                                                   aria-describedby="minIMDHelp"
+                                                   placeholder="" min="1" max="50">
+                                            <small id="minIMDHelp" class="form-text text-muted">
+                                                Leave blank to allow all areas, 5 to allow only the top 50% least
+                                                deprived areas.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-row">
-                    <div class="form-group col-12">
-                        <label for="targetAddressInput">Target Address</label>
-                        <input type="text" class="form-control" id="targetAddressInput"
-                               aria-describedby="targetAddressHelp"
-                               placeholder="" required>
-                        <small id="targetAddressHelp" class="form-text text-muted">Destination address for travel time
-                            calculations - e.g. workplace, city center, family home</small>
+                    <div class="form-group col-6">
+                        <button type="button" class="btn btn-outline-primary btn-block" id="addTargetButton">
+                            Add Target
+                        </button>
+                    </div>
+                    <div class="form-group col-6">
+                        <button type="button" class="btn btn-outline-danger btn-block" id="clearTargetsButton">
+                            Clear Targets
+                        </button>
                     </div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group col-12 col-xl-4">
-                        <label for="maxWalkingTimeInput">Walking (mins)</label>
-                        <input type="number" class="form-control" id="maxWalkingTimeInput"
-                               placeholder="" max="60">
+                    <div class="form-group col-4">
+                        <button type="button" class="btn btn-outline-success btn-block" id="saveSearchButton">
+                            Save Search
+                        </button>
                     </div>
-                    <div class="form-group col-12 col-xl-4">
-                        <label for="maxCyclingTimeInput">Cycling (mins)</label>
-                        <input type="number" class="form-control" id="maxCyclingTimeInput"
-                               placeholder="" max="240">
+                    <div class="form-group col-4">
+                        <button type="button" class="btn btn-outline-primary btn-block" id="loadSearchButton">
+                            Load Search
+                        </button>
                     </div>
-                    <div class="form-group col-12 col-xl-4">
-                        <label for="maxBusTimeInput">Bus (mins)</label>
-                        <input type="number" class="form-control" id="maxBusTimeInput"
-                               placeholder="" max="240">
-                    </div>
-                    <div class="form-group col-12 col-xl-4">
-                        <label for="maxCoachTimeInput">Coach (mins)</label>
-                        <input type="number" class="form-control" id="maxCoachTimeInput"
-                               placeholder="" max="240">
-                    </div>
-                    <div class="form-group col-12 col-xl-4">
-                        <label for="maxTrainTimeInput">Train (mins)</label>
-                        <input type="number" class="form-control" id="maxTrainTimeInput"
-                               placeholder="" max="240">
-                    </div>
-                    <div class="form-group col-12 col-xl-4">
-                        <label for="maxDrivingTimeInput">Driving (mins)</label>
-                        <input type="number" class="form-control" id="maxDrivingTimeInput"
-                               placeholder="" max="240">
-                    </div>
-                    <div class="form-group col-12">
-                        <small id="maxTransportTimeHelp" class="form-text text-muted">
-                            Maximum journey time to consider for each method of transport, in minutes.<br/>
-                            Leave blank to exclude if you won't travel by one of these methods.<br/>
-                            These are <i>combined</i>, so if you can reach your target by any mode, it'll be included.
-                        </small>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col-12 col-xl-6">
-                        <label for="maxRadiusInput">Maximum Radius (miles)</label>
-                        <input type="number" class="form-control" id="maxRadiusInput"
-                               aria-describedby="maxRadiusHelp"
-                               placeholder="" step="0.01">
-                        <small id="maxRadiusHelp" class="form-text text-muted">
-                            Limit resulting shape to max radius. Can be useful to filter out outliers from above.
-                        </small>
-                    </div>
-                    <div class="form-group col-12 col-xl-6">
-                        <label for="simplifyFactorInput">Simplify</label>
-                        <input type="number" class="form-control" id="simplifyFactorInput"
-                               placeholder="" max="1" step="0.00000001">
-                        <small id="simplifyFactorInputHelp" class="form-text text-muted">
-                            Simplify resulting shape (if set). Can be useful for Zoopla URL limit.
-                        </small>
+                    <div class="form-group col-4">
+                        <button type="button" class="btn btn-outline-secondary btn-block" id="manageSavedButton">
+                            Manage Saved
+                        </button>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group col-12">
-                        <label for="minIMDInput">Minimum Deprivation Rank (1-10)</label>
-                        <input type="number" class="form-control" id="minIMDInput"
-                               aria-describedby="minIMDHelp"
-                               placeholder="" min="1" max="10">
-                        <small id="minIMDHelp" class="form-text text-muted">
-                            Leave blank to allow all areas, 5 to allow only the top 50% least deprived areas.
-                        </small>
-                    </div>
-                </div>
-                <div class="form-row" id="">
-                    <div class="form-group col-12">
-                        <button type="button" class="btn btn-primary btn-block" id="generateButton">Generate Search
-                            Area
+                        <button type="button" class="btn btn-success btn-block" id="generateButton">
+                            Generate Search Area
                         </button>
 
-                        <button type="button" class="btn btn-primary btn-block" id="generateButtonLoading"
-                                style="display: none;"
-                                disabled>
+                        <button type="button" class="btn btn-secondary btn-block" id="generateButtonLoading"
+                                style="display: none;" disabled>
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             Working...
                         </button>
 
-                        <button type="button" class="btn btn-success btn-block" style="display: none" id="zooplaButton">
+                        <button type="button" class="btn btn-info btn-block" style="display: none" id="zooplaButton">
                             Build Zoopla Search
                         </button>
                     </div>
@@ -234,16 +301,16 @@
                 </div>
             </div>
         </div>
-        <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="errorModalTitle"></h5>
+                        <h5 class="modal-title" id="messageModalTitle"></h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
-                    <div class="modal-body" id="errorModalBody"></div>
+                    <div class="modal-body" id="messageModalBody"></div>
                 </div>
             </div>
         </div>

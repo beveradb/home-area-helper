@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
-import json
+import logging
 import os
 
-from flask import Flask, render_template, Response
-from shapely.geometry import mapping
+import ucache
+from flask import Flask, render_template, Response, request
 
-from src import target_area, timeit
+from src import target_area, utils
 
 app = Flask(__name__)
+
+# Set up debug logging to console
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
+logging.getLogger().setLevel(logging.DEBUG)
+
+# Set up disk caching for complex computations, with max size 5GB and 1 year expiry
+cache = ucache.SqliteCache(filename='compute_cache.sqlite', cache_size=5000, timeout=32000000)
 
 
 @app.route('/')
 def index():
-    # This script requires you have environment variables set with your personal API keys:
+    # This script requires you define environment variables with your personal API keys:
     # MAPBOX_ACCESS_TOKEN from https://docs.mapbox.com/help/how-mapbox-works/access-tokens/
     # TRAVELTIME_APP_ID from https://docs.traveltimeplatform.com/overview/introduction
     # TRAVELTIME_API_KEY from https://docs.traveltimeplatform.com/overview/introduction
@@ -23,53 +30,21 @@ def index():
     )
 
 
-target_area_route = '/target_area/<string:target>'
-target_area_route += '/<int:walking>/<int:cycling>/<int:bus>'
-target_area_route += '/<int:coach>/<int:train>/<int:driving>'
-target_area_route += '/<int:deprivation>/<float:radius>/<float:simplify>'
-
-
-@app.route(target_area_route)
-def target_area_json(
-        target: str,
-        walking: int,
-        cycling: int,
-        bus: int,
-        coach: int,
-        train: int,
-        driving: int,
-        deprivation: int,
-        radius: float,
-        simplify: float
-):
+@app.route('/target_area', methods=['POST'])
+def target_area_json():
+    req_data = request.get_json()
     # yappi.start()
+    # cache.flush()
 
-    def calculate_results():
-        polygon_results = target_area.get_target_area_polygons(
-            target_location_address=target,
-            min_deprivation_score=deprivation,
-            max_walking_time_mins=walking,
-            max_cycling_time_mins=cycling,
-            max_bus_time_mins=bus,
-            max_coach_time_mins=coach,
-            max_train_time_mins=train,
-            max_driving_time_mins=driving,
-            max_radius_miles=radius,
-            simplify_factor=simplify
-        )
-        for key, value in polygon_results.items():
-            if 'polygon' in value:
-                polygon_results[key]['polygon'] = mapping(value['polygon'])
+    logging.log(logging.INFO, "Request received: " + str(req_data))
 
-        return json.dumps(polygon_results)
-
-    results = calculate_results()
+    results = target_area.get_target_areas_polygons_json(req_data)
 
     # func_stats = yappi.get_func_stats()
     # func_stats.save('callgrind.out.' + str(time.time()), 'CALLGRIND')
     # yappi.stop()
     # yappi.clear_stats()
-    timeit.log_cumulatives()
+    utils.log_method_timings()
 
     return Response(results, mimetype='application/json')
 

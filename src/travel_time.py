@@ -1,24 +1,47 @@
 #!/usr/bin/env python3
-import datetime
-import json
+import logging
 import os
-import urllib.request
 
-from src.timeit import timeit
+from backoff import on_exception, expo
+from ratelimit import RateLimitException, limits
+
+from run_server import cache
+from src.utils import timeit, cached_requests
 
 
 @timeit
+@on_exception(expo, RateLimitException, max_tries=10)  # Backoff exponentially and retry if rate limit hit
+@limits(calls=8, period=60)  # TravelTime only allows 10 requests per minute, and sends nag emails when near this...
+def call_traveltime_api(url, body, headers):
+    response = cached_requests.post(
+        url,
+        json=body,
+        headers=headers,
+    )
+
+    if response.from_cache:
+        logging.log(logging.DEBUG,
+                    'Cache HIT - this response was fetched from the local SQLite DB without a new API call')
+    else:
+        logging.debug('Cache MISS - this response required a new API call')
+
+    return response
+
+
+@timeit
+@cache.cached()
 def get_public_transport_isochrone_geometry(target_lng_lat, mode, max_travel_time_mins):
+    traveltime_api_url = 'http://api.traveltimeapp.com/v4/time-map'
     public_transport_isochrone_request_headers = {
         'Content-Type': 'application/json',
         "X-Application-Id": os.environ['TRAVELTIME_APP_ID'],
         "X-Api-Key": os.environ['TRAVELTIME_API_KEY'],
     }
 
-    public_transport_isochrone_request_body_json = json.dumps({
+    public_transport_isochrone_request_body = {
         "departure_searches": [
             {
-                "id": "first request",
+                "id": str(target_lng_lat) + "-" + mode + "-" + str(max_travel_time_mins),
                 "coords": {"lng": target_lng_lat[0], "lat": target_lng_lat[1]},
                 "transportation": {"type": mode},
                 "departure_time": "2019-09-30T08:00:00+0000",
@@ -26,29 +49,28 @@ def get_public_transport_isochrone_geometry(target_lng_lat, mode, max_travel_tim
             }
         ],
         "arrival_searches": []
-    })
+    }
 
-    print('[%s] Making HTTP request to TravelTime API for mode: %s with mins: %1.0f' % (
-        datetime.datetime.utcnow().strftime("%d/%b/%Y %H:%I:%S"),
+    logging.debug('Making HTTP request to TravelTime API for mode: %s with mins: %1.0f' % (
         mode, int(max_travel_time_mins)
     ))
 
-    public_transport_isochrone_request = urllib.request.Request(
-        'http://api.traveltimeapp.com/v4/time-map',
-        public_transport_isochrone_request_body_json.encode("utf-8"),
-        public_transport_isochrone_request_headers
+    response = call_traveltime_api(
+        traveltime_api_url,
+        public_transport_isochrone_request_body,
+        public_transport_isochrone_request_headers,
     )
+    json_response = response.json()
 
-    public_transport_isochrone_response_object = json.load(
-        urllib.request.urlopen(public_transport_isochrone_request)
-    )
+    if response.status_code != 200:
+        logging.debug("Attempted to request with body: " + str(public_transport_isochrone_request_body))
+        logging.debug("Error response from API call: " + str(json_response))
+        raise Exception(str(json_response))
 
-    public_transport_isochrone_shapes = public_transport_isochrone_response_object['results'][0]['shapes']
+    public_transport_isochrone_shapes = json_response['results'][0]['shapes']
 
-    print('[%s] Received response from TravelTime API with shapes: %1.0f' % (
-        datetime.datetime.utcnow().strftime("%d/%b/%Y %H:%I:%S"),
-        len(public_transport_isochrone_shapes)
-    ))
+    logging.log(logging.DEBUG,
+                'Received response from TravelTime API with shapes: %1.0f' % len(public_transport_isochrone_shapes))
 
     return normalise_travel_time_shapes(public_transport_isochrone_shapes)
 

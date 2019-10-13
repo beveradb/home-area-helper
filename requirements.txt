@@ -1,3 +1,7 @@
+ucache
+peewee
+ratelimit
+requests
 yappi
 mapbox
 polyline
@@ -11,3 +15,5 @@ descartes
 pyproj
 geopy
 flask
+requests-cache
+backoff

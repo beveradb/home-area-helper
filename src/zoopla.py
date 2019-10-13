@@ -8,7 +8,7 @@ import polyline
 def launch_property_query_in_browser(rental, min_price, max_price, min_beds, max_beds, shared_accommodation,
                                      custom_keywords, area_polygon):
     # Useful when debugging this to find the ideal simplification factor:
-    # print("Zoopla URL Length: " + str(len(zooplaTools.buildPropertyQueryURL(
+    # logging.debug("Zoopla URL Length: " + str(len(zooplaTools.buildPropertyQueryURL(
     # rental, minPrice, maxPrice, minBeds, maxBeds, sharedAccommodation, customKeywords, combinedIntersectionPolygon))))
 
     zoopla_url = build_property_query_url(rental, min_price, max_price, min_beds, max_beds, shared_accommodation,
