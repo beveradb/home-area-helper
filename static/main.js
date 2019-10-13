@@ -6,7 +6,9 @@ window.mainMap = {
 
 function map_loaded(map) {
     window.mainMap.map = map;
+}
 
+$(function () {
     $("#addTargetButton").click(function (e) {
         add_new_target_to_accordion();
         return false;
@@ -34,7 +36,7 @@ function map_loaded(map) {
         validate_and_submit_request();
         return false;
     });
-}
+});
 
 function validate_and_submit_request() {
     if (check_targets_validity() === false) {
@@ -285,6 +287,7 @@ function plot_results(api_call_data) {
 
     let current_colour = 1;
     let all_targets_results = api_call_data['targets_results'];
+    let result_intersection = api_call_data['result_intersection'];
 
     all_targets_results.forEach(function (target_results, target_index) {
         let target_prefix = "#" + (target_index + 1) + ": ";
@@ -293,7 +296,7 @@ function plot_results(api_call_data) {
 
             let single_result = target_results[key];
 
-            if (single_result.hasOwnProperty('polygon') && key !== "result_intersection") {
+            if (single_result.hasOwnProperty('polygon')) {
                 plot_polygon(
                     key + "-" + target_index,
                     target_prefix + single_result['label'],
@@ -317,15 +320,15 @@ function plot_results(api_call_data) {
 
     $('#map-filter-menu').show();
 
-    if (api_call_data['result_intersection']) {
-        plot_polygon('result_intersection', api_call_data['result_intersection']['label'],
-            api_call_data['result_intersection']['polygon'], result_green, 0.7, true
+    if (result_intersection) {
+        plot_polygon('result_intersection', result_intersection['label'],
+            result_intersection['polygon'], result_green, 0.7, true
         );
 
-        map.fitBounds(api_call_data['result_intersection']['bounds']);
+        map.fitBounds(result_intersection['bounds']);
 
         let centerOnce = function (e) {
-            map.panTo(api_call_data['result_intersection']['centroid']);
+            map.panTo(result_intersection['centroid']);
             map.off('moveend', centerOnce);
         };
         map.on('moveend', centerOnce);

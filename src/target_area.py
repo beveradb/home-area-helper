@@ -116,7 +116,7 @@ def get_target_area_polygons(
             result_intersection = result_intersection.simplify(simplify_factor)
 
         return_object['result_intersection'] = {
-            'label': 'Combined Result',
+            'label': 'Intersection',
             'polygon': result_intersection
         }
 
@@ -170,6 +170,8 @@ def get_target_areas_polygons_json(targets_params: list):
             simplify_factor=float(params['simplify'])
         )
 
+        intersections_to_combine.append(target_results['result_intersection']['polygon'])
+
         # Convert all of the response Polygon objects to GeoJSON
         for key, value in target_results.items():
             if 'polygon' in value:
@@ -177,9 +179,15 @@ def get_target_areas_polygons_json(targets_params: list):
 
         response_object['targets_results'].append(target_results)
 
-        intersections_to_combine.append(target_results['result_intersection'])
-
     # Add result_intersection to response object, with bounds and centroid
+    joined_intersections = multi_polygons.join_multi_to_single_poly(intersections_to_combine)
+
+    response_object['result_intersection'] = {
+        'label': 'Combined Result',
+        'bounds': joined_intersections.bounds,
+        'centroid': mapping(joined_intersections.centroid),
+        'polygon': mapping(joined_intersections)
+    }
 
     return json.dumps(response_object)
 
