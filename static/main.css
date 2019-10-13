@@ -50,19 +50,22 @@ body, html {
 }
 
 @media (max-width: 768px) {
+}
+
+@media (max-width: 992px) {
     #map {
         height: 600px;
     }
 }
 
 @media (min-width: 768px) {
+}
+
+@media (min-width: 992px) {
     #controls {
         overflow-y: scroll;
         height: 100%;
     }
-}
-
-@media (min-width: 992px) {
 }
 
 @media (min-width: 1200px) {
@@ -152,4 +155,13 @@ body, html {
 
 .singleTargetValues {
     margin-bottom: 1em;
+}
+
+.form-row.controlActionButtons button {
+    height: 100%;
+}
+
+.savedSearchValueGroup {
+    flex: 0 0 10%;
+    max-width: 15%;
 }

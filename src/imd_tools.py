@@ -7,11 +7,13 @@ import pyproj
 from shapely.geometry import MultiPolygon, shape
 from shapely.ops import transform
 
+from run_server import cache
 from src import multi_polygons
 from src.utils import timeit
 
 
 @timeit
+@cache.cached()
 def get_polygon_for_least_deprived_zones_england(minimum_deprivation_rank):
     # Metadata as per https://www.arcgis.com/home/item.html?id=5e1c399d787e48c0902e5fe4fc1ccfe3
     filtered_zones_polygons = []
@@ -26,6 +28,7 @@ def get_polygon_for_least_deprived_zones_england(minimum_deprivation_rank):
 
 
 @timeit
+@cache.cached()
 def get_polygon_for_least_deprived_zones_scotland(minimum_deprivation_rank):
     filtered_zones_polygons = []
     with fiona.open('datasets/SG_SIMD_2016/SG_SIMD_2016.shp') as allZones:
@@ -39,6 +42,7 @@ def get_polygon_for_least_deprived_zones_scotland(minimum_deprivation_rank):
 
 
 @timeit
+@cache.cached()
 def get_polygon_for_least_deprived_zones_uk(minimum_deprivation_rank):
     # Hah, guess you aren't a Scottish Independence voter ;)
     return MultiPolygon(itertools.chain(
@@ -48,6 +52,7 @@ def get_polygon_for_least_deprived_zones_uk(minimum_deprivation_rank):
 
 
 @timeit
+@cache.cached()
 def get_simplified_clipped_uk_deprivation_polygon(min_deprivation_score, bounding_poly):
     imd_filter_multi_polygon = get_polygon_for_least_deprived_zones_uk(min_deprivation_score)
     # logging.debug("imdFilterMultiPolygons after deprivation filter: " + str(len(imdFilterMultiPolygon)))

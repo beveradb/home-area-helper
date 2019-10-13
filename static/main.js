@@ -100,7 +100,7 @@ function show_saved_searches_modal() {
                     let prop_value = single_target[prop_key];
                     if (prop_value > 0) {
                         saved_searches_html +=
-                            '         <div class="col-2">' +
+                            '         <div class="col-1 savedSearchValueGroup">' +
                             '              <label class="col-form-label">' + prop_key_map[prop_key] + '</label>' +
                             '              <input type="text" class="form-control form-control-sm" value="' + prop_value + '" disabled>' +
                             '         </div>';
@@ -235,7 +235,7 @@ function add_new_target_to_accordion() {
     newTargetCard.addClass('targetCard');
     newTargetCard.data('targetkey', newTargetKey);
 
-    let newCollapseButton = newTargetCard.find('.card-header button');
+    let newCollapseButton = newTargetCard.find('.card-header button.targetCardTitle');
     newCollapseButton.data('target', "#targetCollapse" + newTargetKey);
     newCollapseButton.attr('data-target', "#targetCollapse" + newTargetKey);
     newCollapseButton.text('Target #' + newTargetKey);
@@ -313,10 +313,10 @@ function build_targets_array() {
             if (!singleTargetData[key]) singleTargetData[key] = 0;
         }
 
-        singleTargetData['radius'] = parseFloat(singleTargetData['radius']).toFixed(8);
-        singleTargetData['minarea'] = parseFloat(singleTargetData['minarea']).toFixed(8);
-        singleTargetData['simplify'] = parseFloat(singleTargetData['simplify']).toFixed(8);
-        singleTargetData['buffer'] = parseFloat(singleTargetData['buffer']).toFixed(8);
+        singleTargetData['radius'] = parseFloat(singleTargetData['radius']).toFixed(8).replace(/0+$/, '');
+        singleTargetData['minarea'] = parseFloat(singleTargetData['minarea']).toFixed(8).replace(/0+$/, '');
+        singleTargetData['simplify'] = parseFloat(singleTargetData['simplify']).toFixed(8).replace(/0+$/, '');
+        singleTargetData['buffer'] = parseFloat(singleTargetData['buffer']).toFixed(8).replace(/0+$/, '');
 
         allTargets.push(singleTargetData);
     });

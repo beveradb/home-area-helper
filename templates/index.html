@@ -25,7 +25,7 @@
 <body>
 <div class="container-fluid h-100">
     <div class="row h-100">
-        <div id="controls" class="col-12 col-md-4">
+        <div id="controls" class="col-12 col-lg-3">
             <div class="jumbotron">
                 <h1>Home Area Helper</h1>
                 <p class="lead">Build property search area alerts based on target destination travel time and
@@ -34,13 +34,22 @@
             <form id="generateSearchAreaForm">
                 <div class="accordion form-group" id="targetsAccordion">
                     <div class="card" id="targetCardTemplate" data-targetkey="0" style="display: none">
-                        <div class="card-header">
-                            <h2 class="mb-0">
-                                <button class="btn btn-link btn-block" type="button" data-toggle="collapse"
-                                        aria-expanded="true">
-                                    Target Destination #
-                                </button>
-                            </h2>
+                        <div class="card-header container-fluid">
+                            <div class="row">
+                                <div class="col-10">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-link btn-block targetCardTitle text-left" type="button" data-toggle="collapse"
+                                                aria-expanded="true">
+                                            Target Destination #
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div class="col-2 float-right">
+                                    <button class="btn btn-block btn-danger close" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div class="collapse" data-parent="#targetsAccordion">
                             <div class="card-body">
@@ -57,32 +66,32 @@
                                     </div>
                                     <div class="form-row">
                                         <div class="form-group col-12 col-xl-4">
-                                            <label for="maxWalkingTimeInput">Walking (mins)</label>
+                                            <label for="maxWalkingTimeInput">Walking (min)</label>
                                             <input type="number" class="form-control maxWalkingTimeInput"
                                                    placeholder="" max="240">
                                         </div>
                                         <div class="form-group col-12 col-xl-4">
-                                            <label for="maxCyclingTimeInput">Cycling (mins)</label>
+                                            <label for="maxCyclingTimeInput">Cycling (min)</label>
                                             <input type="number" class="form-control maxCyclingTimeInput"
                                                    placeholder="" max="240">
                                         </div>
                                         <div class="form-group col-12 col-xl-4">
-                                            <label for="maxBusTimeInput">Bus (mins)</label>
+                                            <label for="maxBusTimeInput">Bus (min)</label>
                                             <input type="number" class="form-control maxBusTimeInput"
                                                    placeholder="" max="240">
                                         </div>
                                         <div class="form-group col-12 col-xl-4">
-                                            <label for="maxCoachTimeInput">Coach (mins)</label>
+                                            <label for="maxCoachTimeInput">Coach (min)</label>
                                             <input type="number" class="form-control maxCoachTimeInput"
                                                    placeholder="" max="240">
                                         </div>
                                         <div class="form-group col-12 col-xl-4">
-                                            <label for="maxTrainTimeInput">Train (mins)</label>
+                                            <label for="maxTrainTimeInput">Train (min)</label>
                                             <input type="number" class="form-control maxTrainTimeInput"
                                                    placeholder="" max="240">
                                         </div>
                                         <div class="form-group col-12 col-xl-4">
-                                            <label for="maxDrivingTimeInput">Driving (mins)</label>
+                                            <label for="maxDrivingTimeInput">Driving (min)</label>
                                             <input type="number" class="form-control maxDrivingTimeInput"
                                                    placeholder="" max="240">
                                         </div>
@@ -98,7 +107,7 @@
                                     </div>
                                     <div class="form-row">
                                         <div class="form-group col-12 col-xl-6">
-                                            <label for="maxRadiusInput">Maximum Radius (miles)</label>
+                                            <label for="maxRadiusInput">Max. Radius (mi)</label>
                                             <input type="number" class="form-control maxRadiusInput"
                                                    placeholder="" step="0.01">
                                             <small id="maxRadiusHelp" class="form-text text-muted">
@@ -106,7 +115,7 @@
                                             </small>
                                         </div>
                                         <div class="form-group col-12 col-xl-6">
-                                            <label for="minAreaRadiusInput">Minimum Area (miles)</label>
+                                            <label for="minAreaRadiusInput">Min. Area (mi)</label>
                                             <input type="number" class="form-control minAreaRadiusInput"
                                                    placeholder="" step="0.0000001">
                                             <small id="minAreaRadiusInputHelp" class="form-text text-muted">
@@ -116,7 +125,7 @@
                                     </div>
                                     <div class="form-row">
                                         <div class="form-group col-12 col-xl-6">
-                                            <label for="simplifyFactorInput">Simplify (degrees)</label>
+                                            <label for="simplifyFactorInput">Simplify (deg)</label>
                                             <input type="number" class="form-control simplifyFactorInput"
                                                    placeholder="" max="0.1" step="0.00000001" value="0.005">
                                             <small id="simplifyFactorInputHelp" class="form-text text-muted">
@@ -125,7 +134,7 @@
                                             </small>
                                         </div>
                                         <div class="form-group col-12 col-xl-6">
-                                            <label for="bufferFactorInput">Buffer (degrees)</label>
+                                            <label for="bufferFactorInput">Buffer (deg)</label>
                                             <input type="number" class="form-control bufferFactorInput"
                                                    placeholder="" max="0.1" step="0.00000001" value="0.005">
                                             <small id="bufferFactorInputHelp" class="form-text text-muted">
@@ -135,7 +144,7 @@
                                     </div>
                                     <div class="form-row">
                                         <div class="form-group col-12">
-                                            <label for="minIMDInput">Minimum Deprivation Rank (1-10)</label>
+                                            <label for="minIMDInput">Min. Deprivation Rank (1-10)</label>
                                             <input type="number" class="form-control minIMDInput"
                                                    aria-describedby="minIMDHelp"
                                                    placeholder="" min="1" max="50">
@@ -151,7 +160,7 @@
                     </div>
                 </div>
 
-                <div class="form-row">
+                <div class="form-row controlActionButtons">
                     <div class="form-group col-6">
                         <button type="button" class="btn btn-outline-primary btn-block" id="addTargetButton">
                             Add Target
@@ -163,7 +172,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="form-row">
+                <div class="form-row controlActionButtons">
                     <div class="form-group col-4">
                         <button type="button" class="btn btn-outline-success btn-block" id="saveSearchButton">
                             Save Search
@@ -208,7 +217,7 @@
                 </small>
             </div>
         </div>
-        <div id="map-container" class="col-12 col-md-8">
+        <div id="map-container" class="col-12 col-lg-9">
             <nav id="map-filter-menu"></nav>
             <div id="map"></div>
         </div>
