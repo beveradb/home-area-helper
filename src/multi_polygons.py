@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+import json
 import logging
 from functools import partial
 
 import pyproj
 import shapely.ops
 from shapely.affinity import scale
-from shapely.geometry import Point, MultiPoint, Polygon, LineString
+from shapely.geometry import Point, MultiPoint, Polygon, LineString, mapping
 
 from run_server import cache
 from src.utils import timeit
@@ -119,6 +120,7 @@ def join_multi_with_connecting_lines(multi_polygon_to_join):
 
     connecting_lines_array = get_connecting_lines_for_multi(multi_polygon_to_join)
     multi_polygon_to_join = union_polygons([multi_polygon_to_join, *connecting_lines_array])
+    multi_polygon_to_join = union_polygons(multi_polygon_to_join)
 
     if hasattr(multi_polygon_to_join, 'geoms'):
         new_length = len(multi_polygon_to_join.geoms)
@@ -128,12 +130,15 @@ def join_multi_with_connecting_lines(multi_polygon_to_join):
     logging.debug("Length of MultiPolygon before join: " + str(previous_length) + " - after: " + str(new_length))
 
     if new_length == previous_length:
-        logging.debug("Connecting lines: ")
+        logging.warning("Connecting lines: ")
         for connecting_line in connecting_lines_array:
-            logging.debug(connecting_line)
-        logging.debug("Result MultiPolygon: " + str(multi_polygon_to_join))
+            logging.warning(json.dumps(mapping(connecting_line)))
+        logging.warning("Result MultiPolygon: " + json.dumps(mapping(multi_polygon_to_join)))
 
-        raise Exception("Joining MultiPolygon with connecting lines failed to decrease length of geoms")
+        logging.warning("Joining MultiPolygon with connecting lines failed to decrease length of geoms!")
+
+        for single_geom in multi_polygon_to_join.geoms:
+            logging.warning("Geom length: " + str(single_geom.area))
 
     return multi_polygon_to_join
 
@@ -143,13 +148,13 @@ def join_multi_with_connecting_lines(multi_polygon_to_join):
 def get_connecting_lines_for_multi(multi_polygon_to_join):
     # logging.debug("get_connecting_lines_for_multi called with " + str(type(multi_polygon_to_join)))
 
-    # logging.debug("get_connecting_lines_for_multi multi_polygon_to_join length: " + str(len(multi_polygon_to_join)))
+    logging.debug("get_connecting_lines_for_multi multi_polygon_to_join length: " + str(len(multi_polygon_to_join)))
 
     connecting_line_polygons = []
     rep_points_list = [polygon.representative_point() for polygon in multi_polygon_to_join]
 
-    # logging.debug("get_connecting_lines_for_multi rep_points_list length: " + str(len(rep_points_list)))
-    # logging.debug(rep_points_list)
+    logging.debug("get_connecting_lines_for_multi rep_points_list length: " + str(len(rep_points_list)))
+    logging.debug(rep_points_list)
 
     # For each polygon in this multipolygon, generate a line which connects it to the nearest /other/ polygon
     # by both of their representative points (for speed), and add that line to the above array
@@ -159,8 +164,8 @@ def get_connecting_lines_for_multi(multi_polygon_to_join):
         single_connecting_line_polygon = get_line_connecting_single_point_to_others(single_rep, rep_points_list)
         connecting_line_polygons.append(single_connecting_line_polygon)
 
-    # logging.debug("get_connecting_lines_for_multi returning connecting_line_polygons with length: " + str(
-    # len(connecting_line_polygons)))
+    logging.debug("get_connecting_lines_for_multi returning connecting_line_polygons with length: " + str(
+        len(connecting_line_polygons)))
 
     return connecting_line_polygons
 

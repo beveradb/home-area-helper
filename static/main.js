@@ -6,17 +6,15 @@ window.mainMap = {
 
 function map_loaded(map) {
     window.mainMap.map = map;
-    $('#map-filter-menu').hide();
 
-    $('#generateSearchAreaForm input').each(function (i, elem) {
-        $(elem).val(localStorage.getItem($(elem).attr('id')));
+    $("#addTargetButton").click(function (e) {
+        add_new_target_to_accordion();
+        return false;
     });
 
-    $('#generateSearchAreaForm input').keypress(function (e) {
-        if (e.which === 13) {
-            $('#generateSearchAreaForm').submit();
-            return false;
-        }
+    $("#clearTargetsButton").click(function (e) {
+        $('#targetsAccordion .targetCard').remove();
+        return false;
     });
 
     $("#generateButton").click(function (e) {
@@ -29,77 +27,182 @@ function map_loaded(map) {
         return false;
     });
 
-    $("#generateSearchAreaForm").submit(function (e) {
+    $('#generateSearchAreaForm').submit(function (e) {
         e.stopPropagation();
         e.preventDefault();
 
-        let formInputs = $('#generateSearchAreaForm input');
-        let formValid = !formInputs.map(function (key, elem) {
+        validate_and_submit_request();
+        return false;
+    });
+}
+
+function validate_and_submit_request() {
+    if (check_targets_validity() === false) {
+        return;
+    }
+
+    toggle_action_buttons();
+
+    request_and_plot_areas(
+        build_targets_array(),
+        function () {
+            toggle_action_buttons();
+
+            // For UX on mobile devices where map starts off screen
+            $('#map').get(0).scrollIntoView();
+        },
+        function (jqXHR) {
+            show_iframe_error_modal(jqXHR.responseText);
+            toggle_action_buttons();
+        }
+    );
+}
+
+function add_new_target_to_accordion() {
+    let targetsAccordion = $('#targetsAccordion');
+    let newTargetCard = $('#targetCardTemplate').clone();
+
+    let existingTargetKeys = targetsAccordion.find('div.card').map(function () {
+        return $(this).data('targetkey');
+    }).get();
+    let newTargetKey = Math.max(...existingTargetKeys) + 1;
+
+    newTargetCard.attr('id', 'targetCard' + newTargetKey);
+    newTargetCard.addClass('targetCard');
+    newTargetCard.data('targetkey', newTargetKey);
+
+    let newCollapseButton = newTargetCard.find('.card-header button');
+    newCollapseButton.data('target', "#targetCollapse" + newTargetKey);
+    newCollapseButton.attr('data-target', "#targetCollapse" + newTargetKey);
+    newCollapseButton.text('Target Destination #' + newTargetKey);
+
+    let newCollapseBody = newTargetCard.find('div.collapse');
+    newCollapseBody.attr('id', "targetCollapse" + newTargetKey);
+    newCollapseBody.addClass('show');
+
+    newTargetCard.find('input').keypress(function (e) {
+        if (e.which === 13) {
+            $('#generateSearchAreaForm').submit();
+            return false;
+        }
+    });
+
+    newTargetCard.show().appendTo(targetsAccordion);
+    newTargetCard.get()[0].scrollIntoView();
+    newTargetCard.find('.targetAddressInput').focus();
+}
+
+function show_iframe_error_modal(error_message_html) {
+    $('#errorModalTitle').text("Server Error");
+    let errorFrame = $("<iframe class='errorFrame'></iframe>");
+    errorFrame.attr('srcdoc', error_message_html);
+    $('#errorModalBody').empty().append(errorFrame);
+    $('#errorModal').modal();
+}
+
+function show_html_error_modal(title, message) {
+    $('#errorModalTitle').text(title);
+    $('#errorModalBody').html(message);
+    $('#errorModal').modal();
+}
+
+function toggle_action_buttons() {
+    $("#generateButton").toggle();
+    $("#zooplaButton").toggle();
+    $('#generateButtonLoading').toggle();
+}
+
+function build_targets_array() {
+    // Primitive localStorage cache for input values:
+    //
+    // $('#generateSearchAreaForm input').each(function (i, elem) {
+    //     $(elem).val(localStorage.getItem($(elem).attr('id')));
+    // });
+    //
+    // formInputs.each(function (i, elem) {
+    //     localStorage.setItem($(elem).attr('id'), $(elem).val());
+    // });
+
+    let allTargets = [];
+
+    $('#targetsAccordion div.targetCard').each(function () {
+        let single_card = $(this);
+
+        let singleTargetData = {
+            target: single_card.find(".targetAddressInput").val(),
+            walking: single_card.find(".maxWalkingTimeInput").val(),
+            cycling: single_card.find(".maxCyclingTimeInput").val(),
+            bus: single_card.find(".maxBusTimeInput").val(),
+            coach: single_card.find(".maxCoachTimeInput").val(),
+            train: single_card.find(".maxTrainTimeInput").val(),
+            driving: single_card.find(".maxDrivingTimeInput").val(),
+            deprivation: single_card.find(".minIMDInput").val(),
+            radius: single_card.find(".maxRadiusInput").val(),
+            simplify: single_card.find(".simplifyFactorInput").val()
+        };
+
+        // Default all values to 0 if not set
+        for (let key in singleTargetData) {
+            if (!singleTargetData.hasOwnProperty(key)) continue;
+            if (!singleTargetData[key]) singleTargetData[key] = 0;
+        }
+
+        singleTargetData['radius'] = parseFloat(singleTargetData['radius']).toFixed(8);
+        singleTargetData['simplify'] = parseFloat(singleTargetData['simplify']).toFixed(8);
+
+        allTargets.push(singleTargetData);
+    });
+
+    return allTargets;
+}
+
+function check_targets_validity() {
+    let no_invalid_targets = true;
+    let at_least_one_valid_target = false;
+
+    $('#targetsAccordion div.targetCard').each(function () {
+        let single_card = $(this);
+
+        let singleCardFormInputs = single_card.find('input');
+        let singleCardFormValid = !singleCardFormInputs.map(function (key, elem) {
             return elem.checkValidity();
         }).get().some(function (value) {
             return value === false;
         });
+
         if (
-            !($("#maxWalkingTimeInput").val()) &&
-            !($("#maxCyclingTimeInput").val()) &&
-            !($("#maxBusTimeInput").val()) &&
-            !($("#maxCoachTimeInput").val()) &&
-            !($("#maxTrainTimeInput").val()) &&
-            !($("#maxDrivingTimeInput").val())
+            !(single_card.find(".maxWalkingTimeInput").val()) &&
+            !(single_card.find(".maxCyclingTimeInput").val()) &&
+            !(single_card.find(".maxBusTimeInput").val()) &&
+            !(single_card.find(".maxCoachTimeInput").val()) &&
+            !(single_card.find(".maxTrainTimeInput").val()) &&
+            !(single_card.find(".maxDrivingTimeInput").val())
         ) {
-            $('#errorModalTitle').text("Error");
-            $('#errorModalBody').html("At least one of the travel options must be specified to generate an area!");
-            $('#errorModal').modal();
-            formValid = false;
+            show_html_error_modal(
+                "Validation Error",
+                "At least one of the travel time options must be entered for each target!"
+            );
+            singleCardFormValid = false;
         }
 
-        if (formValid === false) {
-            formInputs.each(function (key, elem) {
+        if (singleCardFormValid === false) {
+            singleCardFormInputs.each(function (key, elem) {
                 return elem.reportValidity();
             });
-            return false;
+            no_invalid_targets = false;
+        } else {
+            at_least_one_valid_target = true;
         }
-
-        $("#generateButton").hide();
-        $("#zooplaButton").hide();
-        $('#generateButtonLoading').show();
-
-        formInputs.each(function (i, elem) {
-            localStorage.setItem($(elem).attr('id'), $(elem).val());
-        });
-
-        generate_and_plot_areas(
-            $("#targetAddressInput").val(),
-            $("#maxWalkingTimeInput").val(),
-            $("#maxCyclingTimeInput").val(),
-            $("#maxBusTimeInput").val(),
-            $("#maxCoachTimeInput").val(),
-            $("#maxTrainTimeInput").val(),
-            $("#maxDrivingTimeInput").val(),
-            $("#minIMDInput").val(),
-            $("#maxRadiusInput").val(),
-            $("#simplifyFactorInput").val(),
-            function () {
-                $('#generateButtonLoading').hide();
-                $("#generateButton").show();
-                $("#zooplaButton").show();
-
-                $('#map').get(0).scrollIntoView();
-            },
-            function (jqXHR, textStatus) {
-                $('#errorModalTitle').text("Server Error");
-                let errorFrame = $("<iframe class='errorFrame'></iframe>");
-                errorFrame.attr('srcdoc', jqXHR.responseText);
-                $('#errorModalBody').empty().append(errorFrame);
-                $('#errorModal').modal();
-
-                $("#generateButton").show();
-                $('#generateButtonLoading').hide();
-            }
-        );
-
-        return false;
     });
+
+    if (at_least_one_valid_target === false && no_invalid_targets === true) {
+        show_html_error_modal(
+            "Validation Error",
+            "At least one target destination must be added to use this tool!"
+        );
+    }
+
+    return at_least_one_valid_target && no_invalid_targets;
 }
 
 function show_zoopla_search_modal() {
@@ -145,46 +248,14 @@ function show_zoopla_search_modal() {
     });
 }
 
-function generate_and_plot_areas(
-    targetAddress,
-    maxWalkingTime,
-    maxCyclingTime,
-    maxBusTime,
-    maxCoachTime,
-    maxTrainTime,
-    maxDrivingTime,
-    minIMDInput,
-    maxRadiusInput,
-    simplifyFactorInput,
+function request_and_plot_areas(
+    allTargetsData,
     successCallback,
     errorCallback
 ) {
     clear_map(window.mainMap.map);
 
-    if (!maxWalkingTime) maxWalkingTime = 0;
-    if (!maxCyclingTime) maxCyclingTime = 0;
-    if (!maxBusTime) maxBusTime = 0;
-    if (!maxCoachTime) maxCoachTime = 0;
-    if (!maxTrainTime) maxTrainTime = 0;
-    if (!maxDrivingTime) maxDrivingTime = 0;
-    if (!minIMDInput) minIMDInput = 0;
-    if (!maxRadiusInput) maxRadiusInput = 0;
-    if (!simplifyFactorInput) simplifyFactorInput = 0;
-
     let targetAreaURL = "/target_area";
-    let singleTargetData = {
-        target: targetAddress,
-        walking: maxWalkingTime,
-        cycling: maxCyclingTime,
-        bus: maxBusTime,
-        coach: maxCoachTime,
-        train: maxTrainTime,
-        driving: maxDrivingTime,
-        deprivation: minIMDInput,
-        radius: parseFloat(maxRadiusInput).toFixed(8),
-        simplify: parseFloat(simplifyFactorInput).toFixed(8)
-    };
-    let allTargetsData = [singleTargetData];
 
     $.ajax({
         url: targetAreaURL,
@@ -214,7 +285,6 @@ function plot_results(api_call_data) {
 
     let current_colour = 1;
     for (let key in api_call_data) {
-        // skip if the property is from prototype
         if (!api_call_data.hasOwnProperty(key)) continue;
 
         let single_result = api_call_data[key];

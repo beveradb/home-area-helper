@@ -19,6 +19,7 @@ body, html {
     #controls .jumbotron {
         padding: 0.4rem 1rem 0.1rem 1rem;
         margin-top: 1rem;
+        margin-bottom: 1rem;
     }
 
     #controls .jumbotron h1.display-4 {
@@ -40,10 +41,10 @@ body, html {
     #controls .jumbotron {
         padding: 1rem 2rem 0.5rem 2rem;
         margin-top: 1rem;
+        margin-bottom: 1rem;
     }
 
-    #controls .jumbotron h1.display-4 {
-        font-size: 2rem;
+    #controls .jumbotron h1 {
         font-weight: 400;
     }
 }
@@ -65,8 +66,8 @@ body, html {
 }
 
 @media (min-width: 1200px) {
-    #controls .jumbotron h1.display-4 {
-        font-size: 3rem;
+    #controls .jumbotron h1 {
+        font-size: 2.5rem;
     }
 }
 
@@ -117,4 +118,12 @@ body, html {
 
 #map-filter-menu a.active:hover {
     opacity: 0.7;
+}
+
+#targetsAccordion .card-header {
+    padding: 0px;
+}
+
+#targetsAccordion .card-header button {
+    padding: 10px;
 }

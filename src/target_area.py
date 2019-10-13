@@ -65,7 +65,7 @@ def get_target_area_polygons(
         travel_isochrones_to_combine
     )
 
-    if combined_transport_poly is not list:
+    if type(combined_transport_poly) is not list:
         # Buffer to remove any self-intersections
         combined_transport_poly = combined_transport_poly.buffer(0.00001)
 
