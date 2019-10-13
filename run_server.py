@@ -6,6 +6,7 @@ import ucache
 from flask import Flask, render_template, Response, request
 
 from src import target_area, utils
+from src.utils import download_dataset_cache_files
 
 app = Flask(__name__)
 
@@ -15,6 +16,9 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 # Set up disk caching for complex computations, with max size 5GB and 1 year expiry
 cache = ucache.SqliteCache(filename='compute_cache.sqlite', cache_size=5000, timeout=32000000, compression=True)
+
+# Download pre-seeded dataset cache file to reduce computations
+download_dataset_cache_files()
 datacache = ucache.SqliteCache(filename='datasets/cache.sqlite', cache_size=5000, timeout=32000000, compression=True)
 
 

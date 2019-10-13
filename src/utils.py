@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 import time
 
@@ -57,3 +58,26 @@ def log_method_timings():
 
     # Clear the cumulative counter now we've completed a request and logged the results
     methods_timings_cumulative = {}
+
+
+def download_file(url, local_filename):
+    command = "curl -s -L -o " + local_filename + " " + url
+    logging.debug(command)
+    logging.debug(os.system(command))
+
+
+def download_dataset_cache_files():
+    file = 'datasets/cache.sqlite'
+    if not os.path.isfile(file):
+        logging.info("Datasets disk cache database file not found, attempting download from github")
+
+        download_file('https://github.com/beveradb/home-area-helper/releases/download/v0.4/cache.sqlite', file)
+
+        file = 'datasets/cache.sqlite-shm'
+        download_file('https://github.com/beveradb/home-area-helper/releases/download/v0.4/cache.sqlite-shm', file)
+
+        file = 'datasets/cache.sqlite-wal'
+        download_file('https://github.com/beveradb/home-area-helper/releases/download/v0.4/cache.sqlite-wal', file)
+
+    if not os.path.isfile('datasets/cache.sqlite'):
+        raise Exception("Datasets disk cache download failed")
