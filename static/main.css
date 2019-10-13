@@ -129,3 +129,27 @@ body, html {
 #targetsAccordion .card-header button {
     padding: 10px;
 }
+
+#savedSearchRow h6 {
+    margin-bottom: 0;
+}
+
+.singleTargetHeading h6 {
+    margin-bottom: 0;
+}
+
+.savedSearchButtons .col-form-label {
+    padding-top: 3px;
+}
+
+.savedSearchButtons .form-group {
+    margin-bottom: 0;
+}
+
+.singleTargetHeading {
+    margin-top: 1em;
+}
+
+.singleTargetValues {
+    margin-bottom: 1em;
+}

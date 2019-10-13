@@ -120,7 +120,8 @@
                                             <input type="number" class="form-control simplifyFactorInput"
                                                    placeholder="" max="0.1" step="0.00000001" value="0.005">
                                             <small id="simplifyFactorInputHelp" class="form-text text-muted">
-                                                Simplify resulting shape (e.g. 0.01). May help shorten long Zoopla URL.
+                                                Simplify resulting shape (e.g. 0.01). May help shorten long property
+                                                URL.
                                             </small>
                                         </div>
                                         <div class="form-group col-12 col-xl-6">
@@ -128,7 +129,7 @@
                                             <input type="number" class="form-control bufferFactorInput"
                                                    placeholder="" max="0.1" step="0.00000001" value="0.005">
                                             <small id="bufferFactorInputHelp" class="form-text text-muted">
-                                                Buffer resulting shape (e.g. 0.01). May help shorten long Zoopla URL.
+                                                Buffer resulting shape (e.g. 0.01). May help shorten long property URL.
                                             </small>
                                         </div>
                                     </div>
@@ -170,7 +171,7 @@
                     </div>
                     <div class="form-group col-4">
                         <button type="button" class="btn btn-outline-primary btn-block" id="loadSearchButton">
-                            Load Search
+                            Load Last Saved
                         </button>
                     </div>
                     <div class="form-group col-4">
@@ -191,8 +192,8 @@
                             Working...
                         </button>
 
-                        <button type="button" class="btn btn-info btn-block" style="display: none" id="zooplaButton">
-                            Build Zoopla Search
+                        <button type="button" class="btn btn-info btn-block" style="display: none" id="propertyButton">
+                            Build Property Search
                         </button>
                     </div>
                 </div>
@@ -211,26 +212,36 @@
             <nav id="map-filter-menu"></nav>
             <div id="map"></div>
         </div>
-        <div class="modal fade" id="zooplaSearchModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal fade" id="propertySearchModal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="zooplaModalTitle">Build Zoopla Property Search</h5>
+                        <h5 class="modal-title" id="propertyModalTitle">Build Property Property Search</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
-                    <div class="modal-body" id="zooplaModalBody">
-                        <form id="zooplaParametersForm">
+                    <div class="modal-body" id="propertyModalBody">
+                        <form id="propertyParametersForm">
                             <div class="form-row">
-                                <div class="form-group col-12">
+                                <div class="form-group col-6">
                                     <label for="rentOrBuyInput">Rent / Buy</label>
                                     <select class="form-control" id="rentOrBuyInput"
                                             aria-describedby="rentOrBuyInputHelp">
-                                        <option selected>Rent</option>
-                                        <option>Buy</option>
+                                        <option value="to-rent" selected>Rent</option>
+                                        <option value="for-sale">Buy</option>
                                     </select>
                                     <small id="rentOrBuyInputHelp" class="form-text text-muted"></small>
+                                </div>
+                                <div class="form-group col-6">
+                                    <label for="propertyTypeInput">Property Type</label>
+                                    <select class="form-control" id="propertyTypeInput"
+                                            aria-describedby="propertyTypeInputHelp">
+                                        <option value="property" selected>Any</option>
+                                        <option value="flats">Flats</option>
+                                        <option value="houses">Houses</option>
+                                    </select>
+                                    <small id="propertyTypeInputHelp" class="form-text text-muted"></small>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -264,24 +275,24 @@
                                     <label for="sharedAccomodationInput">Include Shared Accommodation</label>
                                     <select class="form-control" id="sharedAccomodationInput"
                                             aria-describedby="sharedAccomodationInputHelp">
-                                        <option selected>No</option>
-                                        <option>Yes</option>
+                                        <option value="false" selected>No</option>
+                                        <option value="true">Yes</option>
                                     </select>
                                 </div>
                                 <div class="form-group col-12 col-xl-4">
                                     <label for="sharedOwnershipInput">Include Shared Ownership</label>
                                     <select class="form-control" id="sharedOwnershipInput"
                                             aria-describedby="sharedOwnershipInputHelp">
-                                        <option selected>No</option>
-                                        <option>Yes</option>
+                                        <option value="false" selected>No</option>
+                                        <option value="true">Yes</option>
                                     </select>
                                 </div>
                                 <div class="form-group col-12 col-xl-4">
                                     <label for="retirementHomesInput">Include Retirement Homes</label>
                                     <select class="form-control" id="retirementHomesInput"
                                             aria-describedby="retirementHomesInputHelp">
-                                        <option selected>No</option>
-                                        <option>Yes</option>
+                                        <option value="false" selected>No</option>
+                                        <option value="true">Yes</option>
                                     </select>
                                 </div>
                             </div>
@@ -296,7 +307,9 @@
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="zooplaSearchButton">Search</button>
+                        <button type="button" class="btn btn-primary" id="zooplaSearchButton">Search Zoopla</button>
+                        <button type="button" class="btn btn-primary" id="rightmoveSearchButton">Search Rightmove
+                        </button>
                     </div>
                 </div>
             </div>

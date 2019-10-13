@@ -44,8 +44,8 @@ $(function () {
         return false;
     });
 
-    $("#zooplaButton").off().click(function (e) {
-        show_zoopla_search_modal();
+    $("#propertyButton").off().click(function (e) {
+        show_property_search_modal();
         return false;
     });
 
@@ -61,15 +61,93 @@ $(function () {
 function show_saved_searches_modal() {
     let saved_searches = get_saved_searches();
 
-    let saved_searches_html = '<ul class="list-group">';
-    saved_searches.forEach(function (target_search, target_index) {
-        saved_searches_html += '<li class="list-group-item"><pre>' +
-            JSON.stringify(target_search, null, 2) +
-            '</pre></li>';
+    let prop_key_map = {
+        walking: "Walk",
+        cycling: "Cycle",
+        bus: "Bus",
+        coach: "Coach",
+        train: "Train",
+        driving: "Drive",
+        deprivation: "Deprivation",
+        radius: "Max. Radius",
+        minarea: "Min. Area",
+        simplify: "Simplify",
+        buffer: "Buffer"
+    };
+
+    let saved_searches_html = '<ul id="savedSearchesList" class="list-group">';
+
+    saved_searches.forEach(function (target_search, search_index) {
+        saved_searches_html += '<li class="list-group-item savedSearchRow">';
+
+        saved_searches_html += '<div class="form-row">Search #' + (parseInt(search_index) + 1) + '</div>';
+
+        for (let target_key in target_search) {
+            if (!target_search.hasOwnProperty(target_key)) continue;
+
+            let single_target = target_search[target_key];
+
+            saved_searches_html += '<div class="form-row singleTargetHeading"><div class="col-12">';
+            saved_searches_html += '  <h6>Target #' + (parseInt(target_key) + 1) + ': ' + single_target['target'] + '</h6>';
+            saved_searches_html += '</div></div>';
+
+            saved_searches_html += '<div class="form-row singleTargetValues">';
+
+            for (let prop_key in single_target) {
+                if (!single_target.hasOwnProperty(prop_key)) continue;
+
+                if (prop_key !== "target") {
+                    let prop_value = single_target[prop_key];
+                    if (prop_value > 0) {
+                        saved_searches_html +=
+                            '         <div class="col-2">' +
+                            '              <label class="col-form-label">' + prop_key_map[prop_key] + '</label>' +
+                            '              <input type="text" class="form-control form-control-sm" value="' + prop_value + '" disabled>' +
+                            '         </div>';
+                    }
+                }
+            }
+
+            saved_searches_html += '  </div>';
+            saved_searches_html += '</div>';
+        }
+
+        saved_searches_html +=
+            '<div class="form-row savedSearchButtons">' +
+            '    <div class="form-group col-6">' +
+            '        <button type="button" class="btn btn-outline-primary btn-block loadSearch" ' +
+            '            data-searchindex="' + search_index + '">' +
+            '            Load Search' +
+            '        </button>' +
+            '    </div>' +
+            '    <div class="form-group col-6">' +
+            '        <button type="button" class="btn btn-outline-danger btn-block deleteSearch" ' +
+            '            data-searchindex="' + search_index + '">' +
+            '            Delete Search' +
+            '        </button>' +
+            '    </div>' +
+            '</div>';
+        saved_searches_html += '</li>';
     });
+
     saved_searches_html += "</ul>";
 
     show_html_modal("Saved Searches", saved_searches_html);
+
+    $("#savedSearchesList button.loadSearch").click(function (e) {
+        let search_index = $(this).data('searchindex');
+        let saved_searches = get_saved_searches();
+        load_saved_search(saved_searches[search_index]);
+        $('#messageModal button.close').click();
+        return false;
+    });
+
+    $("#savedSearchesList button.deleteSearch").click(function (e) {
+        let search_index = $(this).data('searchindex');
+        delete_saved_search(search_index);
+        show_saved_searches_modal();
+        return false;
+    });
 }
 
 function save_current_search() {
@@ -78,6 +156,12 @@ function save_current_search() {
 
     saved_searches.push(current_search);
 
+    localStorage.setItem("hah_saved_searches", JSON.stringify(saved_searches));
+}
+
+function delete_saved_search(index) {
+    let saved_searches = get_saved_searches();
+    saved_searches.splice(index, 1);
     localStorage.setItem("hah_saved_searches", JSON.stringify(saved_searches));
 }
 
@@ -126,7 +210,7 @@ function validate_and_submit_request() {
         function () {
             toggle_loading_buttons();
 
-            $("#zooplaButton").show();
+            $("#propertyButton").show();
 
             // For UX on mobile devices where map starts off screen
             $('#map').get(0).scrollIntoView();
@@ -198,7 +282,7 @@ function show_html_modal(title, message) {
 function toggle_loading_buttons() {
     $("#generateButton").toggle();
     $('#generateButtonLoading').toggle();
-    $("#zooplaButton").toggle();
+    $("#propertyButton").hide();
     $('#targetsAccordion .collapse').collapse('hide');
 }
 
@@ -289,47 +373,113 @@ function check_targets_validity() {
     return at_least_one_valid_target && no_invalid_targets;
 }
 
-function show_zoopla_search_modal() {
-    $('#zooplaSearchModal').modal();
+function show_property_search_modal() {
+    $('#propertySearchModal').modal();
 
     $('#zooplaSearchButton').off().click(function (e) {
-        let rentBuyString = $('#rentOrBuyInput').val() === "Rent" ? "to-rent" : "for-sale";
-        let sharedAccommodationString = $('#sharedAccomodationInput').val() === "No" ? "false" : "true";
-        let retirementHomesString = $('#retirementHomesInput').val() === "No" ? "false" : "true";
-        let sharedOwnershipString = $('#sharedOwnershipInput').val() === "No" ? "false" : "true";
-
-        let url = "https://www.zoopla.co.uk/" + rentBuyString + "/map/property/uk/?q=UK";
-        url += "&category=residential";
-        url += "&country_code=";
-        url += "&include_shared_accommodation=" + sharedAccommodationString;
-        url += "&keywords=" + encodeURIComponent($('#customKeywordsInput').val().toLowerCase());
-        url += "&radius=0";
-        url += "&added=";
-        url += "&available_from=";
-        url += "&price_frequency=per_month";
-        url += "&price_min=" + $('#minPriceInput').val().toLowerCase();
-        url += "&price_max=" + $('#maxPriceInput').val().toLowerCase();
-        url += "&beds_min=" + $('#minBedsInput').val().toLowerCase();
-        url += "&beds_max=" + $('#maxBedsInput').val().toLowerCase();
-        url += "&include_retirement_home=" + retirementHomesString;
-        url += "&include_shared_ownership=" + sharedOwnershipString;
-        url += "&new_homes=include";
-        url += "&polyenc=" + encodeURIComponent(
-            polyline.fromGeoJSON(
-                {
-                    "type": "Feature",
-                    "geometry": {
-                        "type": "LineString",
-                        "coordinates": window.currentAllTargetsData['result_intersection']['polygon']['coordinates'][0]
-                    },
-                    "properties": {}
-                }, 5
-            )
-        );
-        url += "&search_source=refine";
-
-        window.open(url, '_blank');
+        window.open(build_zoopla_url(), '_blank');
     });
+
+    $('#rightmoveSearchButton').off().click(function (e) {
+        window.open(build_rightmove_url(), '_blank');
+    });
+}
+
+function build_rightmove_url() {
+    let rentBuyString = $('#rentOrBuyInput').val() === "Rent" ? "to-rent" : "for-sale";
+    let url = "https://www.rightmove.co.uk/property-" + rentBuyString + "/map.html?locationIdentifier=USERDEFINEDAREA";
+
+    url += '^{"polylines":"' + encodeURIComponent(build_polyline_for_url()) + '"}';
+
+    url += '&maxBedrooms=' + $('#maxBedsInput').val().toLowerCase();
+    url += '&minBedrooms=' + $('#minBedsInput').val().toLowerCase();
+
+    url += '&maxPrice=' + $('#maxPriceInput').val().toLowerCase();
+    url += '&minPrice=' + $('#minPriceInput').val().toLowerCase();
+
+    url += '&numberOfPropertiesPerPage=499';
+
+    url += '&viewType=MAP';
+    url += '&furnishTypes=';
+    url += '&keywords=' + encodeURIComponent($('#customKeywordsInput').val().toLowerCase());
+
+    switch ($('#propertyTypeInput').val()) {
+        case "property":
+            url += '&propertyTypes=flat,detached,semi-detached,terraced,bungalow';
+            break;
+        case "flats":
+            url += '&propertyTypes=flat';
+            break;
+        case "houses":
+            url += '&propertyTypes=detached,semi-detached,terraced,bungalow';
+            break;
+    }
+
+    let dont_shows = [];
+    let must_haves = [];
+
+    if ($('#sharedAccomodationInput').val() === "false") {
+        dont_shows.push("houseShare");
+        dont_shows.push("sharedOwnership");
+    } else {
+        must_haves.push("houseShare");
+        must_haves.push("sharedOwnership");
+    }
+
+    if ($('#retirementHomesInput').val() === "false") {
+        dont_shows.push("retirement");
+    } else {
+        must_haves.push("retirement");
+    }
+
+    url += '&dontShow=' + dont_shows.join(',');
+    url += '&mustHave=' + must_haves.join(',');
+
+    return url;
+}
+
+function build_zoopla_url() {
+    let url = "https://www.zoopla.co.uk/";
+
+    url += $('#rentOrBuyInput').val();
+    url += "/map/";
+    url += $('#propertyTypeInput').val();
+    url += "/uk/?q=UK";
+    url += "&category=residential";
+    url += "&country_code=";
+    url += "&keywords=" + encodeURIComponent($('#customKeywordsInput').val().toLowerCase());
+    url += "&radius=0";
+    url += "&added=";
+    url += "&available_from=";
+    url += "&price_frequency=per_month";
+
+    url += "&price_min=" + $('#minPriceInput').val().toLowerCase();
+    url += "&price_max=" + $('#maxPriceInput').val().toLowerCase();
+
+    url += "&beds_min=" + $('#minBedsInput').val().toLowerCase();
+    url += "&beds_max=" + $('#maxBedsInput').val().toLowerCase();
+
+    url += "&include_shared_accommodation=" + $('#sharedAccomodationInput').val();
+    url += "&include_retirement_home=" + $('#retirementHomesInput').val();
+    url += "&include_shared_ownership=" + $('#sharedOwnershipInput').val();
+    url += "&new_homes=include";
+    url += "&polyenc=" + encodeURIComponent(build_polyline_for_url());
+    url += "&search_source=refine";
+
+    return url;
+}
+
+function build_polyline_for_url() {
+    return polyline.fromGeoJSON(
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": window.currentAllTargetsData['result_intersection']['polygon']['coordinates'][0]
+            },
+            "properties": {}
+        }, 5
+    )
 }
 
 function request_and_plot_areas(
