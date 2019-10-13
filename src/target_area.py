@@ -24,8 +24,10 @@ def get_target_area_polygons(
         max_train_time_mins: int,
         max_driving_time_mins: int,
         min_deprivation_score: int,
+        min_area_miles: float,
         max_radius_miles: float,
-        simplify_factor: float
+        simplify_factor: float,
+        buffer_factor: float
 ) -> dict:
     return_object = {}
 
@@ -114,6 +116,7 @@ def get_target_area_polygons(
             }
 
             # Simplify resulting polygon somewhat as URL can't be too long or Zoopla throws HTTP 414 error
+            result_intersection = result_intersection.buffer(buffer_factor)
             result_intersection = result_intersection.simplify(simplify_factor)
 
     return_object['result_intersection'] = {
@@ -178,7 +181,9 @@ def get_target_areas_polygons_json(targets_params: list):
             max_train_time_mins=int(params['train']),
             max_driving_time_mins=int(params['driving']),
             max_radius_miles=float(params['radius']),
-            simplify_factor=float(params['simplify'])
+            min_area_miles=float(params['minarea']),
+            simplify_factor=float(params['simplify']),
+            buffer_factor=float(params['buffer'])
         )
 
         intersections_to_combine.append(target_results['result_intersection']['polygon'])

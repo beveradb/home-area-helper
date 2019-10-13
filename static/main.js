@@ -19,6 +19,26 @@ $(function () {
         return false;
     });
 
+    $("#saveSearchButton").click(function (e) {
+        save_current_search();
+        return false;
+    });
+
+    $("#loadSearchButton").click(function (e) {
+        let saved_searches = get_saved_searches();
+        if (saved_searches[0]) {
+            load_saved_search(saved_searches[saved_searches.length - 1]);
+        } else {
+            show_html_modal("No Saved Searches", "You must save a search first before you can load it!");
+        }
+        return false;
+    });
+
+    $("#manageSavedButton").click(function (e) {
+        show_saved_searches_modal();
+        return false;
+    });
+
     $("#generateButton").click(function (e) {
         $('#generateSearchAreaForm').submit();
         return false;
@@ -37,6 +57,62 @@ $(function () {
         return false;
     });
 });
+
+function show_saved_searches_modal() {
+    let saved_searches = get_saved_searches();
+
+    let saved_searches_html = '<ul class="list-group">';
+    saved_searches.forEach(function (target_search, target_index) {
+        saved_searches_html += '<li class="list-group-item"><pre>' +
+            JSON.stringify(target_search, null, 2) +
+            '</pre></li>';
+    });
+    saved_searches_html += "</ul>";
+
+    show_html_modal("Saved Searches", saved_searches_html);
+}
+
+function save_current_search() {
+    let saved_searches = get_saved_searches();
+    let current_search = build_targets_array();
+
+    saved_searches.push(current_search);
+
+    localStorage.setItem("hah_saved_searches", JSON.stringify(saved_searches));
+}
+
+function load_saved_search(search_targets_array) {
+    $('#targetsAccordion .targetCard').remove();
+
+    search_targets_array.forEach(function (target_search, target_index) {
+        let new_target_card = add_new_target_to_accordion();
+
+        new_target_card.find(".targetAddressInput").val(target_search['target']).focus();
+        if (target_search['walking']) new_target_card.find(".maxWalkingTimeInput").val(target_search['walking']);
+        if (target_search['cycling']) new_target_card.find(".maxCyclingTimeInput").val(target_search['cycling']);
+        if (target_search['bus']) new_target_card.find(".maxBusTimeInput").val(target_search['bus']);
+        if (target_search['coach']) new_target_card.find(".maxCoachTimeInput").val(target_search['coach']);
+        if (target_search['train']) new_target_card.find(".maxTrainTimeInput").val(target_search['train']);
+        if (target_search['driving']) new_target_card.find(".maxDrivingTimeInput").val(target_search['driving']);
+        if (target_search['deprivation']) new_target_card.find(".minIMDInput").val(target_search['deprivation']);
+        if (target_search['radius'] > 0) new_target_card.find(".maxRadiusInput").val(target_search['radius']);
+        if (target_search['minarea'] > 0) new_target_card.find(".minAreaRadiusInput").val(target_search['minarea']);
+        if (target_search['simplify'] > 0) new_target_card.find(".simplifyFactorInput").val(target_search['simplify']);
+        if (target_search['buffer'] > 0) new_target_card.find(".bufferFactorInput").val(target_search['buffer']);
+    });
+
+    validate_and_submit_request();
+}
+
+function get_saved_searches() {
+    let saved_searches = localStorage.getItem("hah_saved_searches");
+    if (saved_searches === null) {
+        saved_searches = [];
+    } else {
+        saved_searches = JSON.parse(saved_searches);
+    }
+    return saved_searches;
+}
 
 function validate_and_submit_request() {
     if (check_targets_validity() === false) {
@@ -101,39 +177,32 @@ function add_new_target_to_accordion() {
 
         newCollapseButton.text(buttonText);
     });
+
+    return newTargetCard;
 }
 
 function show_iframe_error_modal(error_message_html) {
-    $('#errorModalTitle').text("Server Error");
+    $('#messageModalTitle').text("Server Error");
     let errorFrame = $("<iframe class='errorFrame'></iframe>");
     errorFrame.attr('srcdoc', error_message_html);
-    $('#errorModalBody').empty().append(errorFrame);
-    $('#errorModal').modal();
+    $('#messageModalBody').empty().append(errorFrame);
+    $('#messageModal').modal();
 }
 
-function show_html_error_modal(title, message) {
-    $('#errorModalTitle').text(title);
-    $('#errorModalBody').html(message);
-    $('#errorModal').modal();
+function show_html_modal(title, message) {
+    $('#messageModalTitle').text(title);
+    $('#messageModalBody').html(message);
+    $('#messageModal').modal();
 }
 
 function toggle_loading_buttons() {
     $("#generateButton").toggle();
     $('#generateButtonLoading').toggle();
     $("#zooplaButton").toggle();
+    $('#targetsAccordion .collapse').collapse('hide');
 }
 
 function build_targets_array() {
-    // Primitive localStorage cache for input values:
-    //
-    // $('#generateSearchAreaForm input').each(function (i, elem) {
-    //     $(elem).val(localStorage.getItem($(elem).attr('id')));
-    // });
-    //
-    // formInputs.each(function (i, elem) {
-    //     localStorage.setItem($(elem).attr('id'), $(elem).val());
-    // });
-
     let allTargets = [];
 
     $('#targetsAccordion div.targetCard').each(function () {
@@ -149,7 +218,9 @@ function build_targets_array() {
             driving: single_card.find(".maxDrivingTimeInput").val(),
             deprivation: single_card.find(".minIMDInput").val(),
             radius: single_card.find(".maxRadiusInput").val(),
-            simplify: single_card.find(".simplifyFactorInput").val()
+            minarea: single_card.find(".minAreaRadiusInput").val(),
+            simplify: single_card.find(".simplifyFactorInput").val(),
+            buffer: single_card.find(".bufferFactorInput").val()
         };
 
         // Default all values to 0 if not set
@@ -159,7 +230,9 @@ function build_targets_array() {
         }
 
         singleTargetData['radius'] = parseFloat(singleTargetData['radius']).toFixed(8);
+        singleTargetData['minarea'] = parseFloat(singleTargetData['minarea']).toFixed(8);
         singleTargetData['simplify'] = parseFloat(singleTargetData['simplify']).toFixed(8);
+        singleTargetData['buffer'] = parseFloat(singleTargetData['buffer']).toFixed(8);
 
         allTargets.push(singleTargetData);
     });
@@ -189,7 +262,7 @@ function check_targets_validity() {
             !(single_card.find(".maxTrainTimeInput").val()) &&
             !(single_card.find(".maxDrivingTimeInput").val())
         ) {
-            show_html_error_modal(
+            show_html_modal(
                 "Validation Error",
                 "At least one of the travel time options must be entered for each target!"
             );
@@ -207,7 +280,7 @@ function check_targets_validity() {
     });
 
     if (at_least_one_valid_target === false && no_invalid_targets === true) {
-        show_html_error_modal(
+        show_html_modal(
             "Validation Error",
             "At least one target destination must be added to use this tool!"
         );
