@@ -39,6 +39,13 @@ def get_target_area_polygons(
 
     travel_isochrones_to_combine = []
     max_radius_polygon = multi_polygons.get_bounding_circle_for_point(target_lng_lat, max_radius_miles)
+    result_intersection = max_radius_polygon
+
+    if max_radius_polygon is not None:
+        return_object['radius'] = {
+            'label': str(max_radius_miles) + ' mile Radius',
+            'polygon': max_radius_polygon
+        }
 
     transport_modes = [
         {"mode": "walking", "max_time": max_walking_time_mins, "label": '%s min Walk'},
@@ -50,20 +57,19 @@ def get_target_area_polygons(
     ]
 
     for transport in transport_modes:
-        transport_poly = fetch_single_transport_mode_poly(
+        transport_poly = fetch_transport_mode_multipoly(
             target_lng_lat, transport['mode'], transport['max_time'], max_radius_polygon)
 
         if transport_poly is not None:
             travel_isochrones_to_combine.append(transport_poly)
+            transport_poly = multi_polygons.join_multi_to_single_poly(transport_poly)
 
             return_object[transport['mode']] = {
                 'label': transport['label'] % str(transport['max_time']),
                 'polygon': transport_poly
             }
 
-    combined_transport_poly = multi_polygons.join_multi_to_single_poly(
-        travel_isochrones_to_combine
-    )
+    combined_transport_poly = multi_polygons.join_multi_to_single_poly(travel_isochrones_to_combine)
 
     if type(combined_transport_poly) is not list:
         # Buffer to remove any self-intersections
@@ -76,11 +82,6 @@ def get_target_area_polygons(
 
         if max_radius_polygon is not None:
             combined_transport_poly = combined_transport_poly.intersection(max_radius_polygon)
-
-            return_object['radius'] = {
-                'label': str(max_radius_miles) + ' mile Radius',
-                'polygon': max_radius_polygon
-            }
 
         combined_transport_box_poly = Polygon.from_bounds(*combined_transport_poly.bounds).buffer(0.001)
         return_object['combined_transport_box'] = {
@@ -115,10 +116,10 @@ def get_target_area_polygons(
             # Simplify resulting polygon somewhat as URL can't be too long or Zoopla throws HTTP 414 error
             result_intersection = result_intersection.simplify(simplify_factor)
 
-        return_object['result_intersection'] = {
-            'label': 'Intersection',
-            'polygon': result_intersection
-        }
+    return_object['result_intersection'] = {
+        'label': 'Intersection',
+        'polygon': result_intersection
+    }
 
     return return_object
 
@@ -126,6 +127,21 @@ def get_target_area_polygons(
 @timeit
 @cache.cached()
 def fetch_single_transport_mode_poly(target_lng_lat, mode, max_time_mins, filter_polygon=None):
+    if max_time_mins > 0:
+        transport_poly = fetch_transport_mode_multipoly(target_lng_lat, mode, max_time_mins, filter_polygon)
+
+        if hasattr(transport_poly, '__len__') and len(transport_poly) > 0:
+            transport_poly = multi_polygons.join_multi_to_single_poly(transport_poly)
+            return transport_poly
+
+        if type(transport_poly) is Polygon:
+            return transport_poly
+
+    return None
+
+
+@timeit
+def fetch_transport_mode_multipoly(target_lng_lat, mode, max_time_mins, filter_polygon=None):
     if max_time_mins > 0:
         transport_poly = travel_time.get_public_transport_isochrone_geometry(target_lng_lat, mode, max_time_mins)
 
@@ -138,12 +154,7 @@ def fetch_single_transport_mode_poly(target_lng_lat, mode, max_time_mins, filter
         if filter_polygon is not None:
             transport_poly = multi_polygons.filter_multipoly_by_polygon(transport_poly, filter_polygon)
 
-        if hasattr(transport_poly, '__len__') and len(transport_poly) > 0:
-            transport_poly = multi_polygons.join_multi_to_single_poly(transport_poly)
-            return transport_poly
-
-        if type(transport_poly) is Polygon:
-            return transport_poly
+        return transport_poly
 
     return None
 
@@ -174,7 +185,7 @@ def get_target_areas_polygons_json(targets_params: list):
 
         # Convert all of the response Polygon objects to GeoJSON
         for key, value in target_results.items():
-            if 'polygon' in value:
+            if 'polygon' in value and type(value['polygon']) is Polygon:
                 target_results[key]['polygon'] = mapping(value['polygon'])
 
         response_object['targets_results'].append(target_results)
@@ -185,7 +196,7 @@ def get_target_areas_polygons_json(targets_params: list):
     response_object['result_intersection'] = {
         'label': 'Combined Result',
         'bounds': joined_intersections.bounds,
-        'centroid': mapping(joined_intersections.centroid),
+        'centroid': mapping(joined_intersections.centroid)['coordinates'],
         'polygon': mapping(joined_intersections)
     }
 

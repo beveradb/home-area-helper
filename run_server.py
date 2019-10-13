@@ -34,6 +34,7 @@ def index():
 def target_area_json():
     req_data = request.get_json()
     # yappi.start()
+    # cache.flush()
 
     logging.log(logging.INFO, "Request received: " + str(req_data))
 

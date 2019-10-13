@@ -24,7 +24,7 @@ $(function () {
         return false;
     });
 
-    $("#zooplaButton").click(function (e) {
+    $("#zooplaButton").off().click(function (e) {
         show_zoopla_search_modal();
         return false;
     });
@@ -43,19 +43,21 @@ function validate_and_submit_request() {
         return;
     }
 
-    toggle_action_buttons();
+    toggle_loading_buttons();
 
     request_and_plot_areas(
         build_targets_array(),
         function () {
-            toggle_action_buttons();
+            toggle_loading_buttons();
+
+            $("#zooplaButton").show();
 
             // For UX on mobile devices where map starts off screen
             $('#map').get(0).scrollIntoView();
         },
         function (jqXHR) {
             show_iframe_error_modal(jqXHR.responseText);
-            toggle_action_buttons();
+            toggle_loading_buttons();
         }
     );
 }
@@ -76,7 +78,7 @@ function add_new_target_to_accordion() {
     let newCollapseButton = newTargetCard.find('.card-header button');
     newCollapseButton.data('target', "#targetCollapse" + newTargetKey);
     newCollapseButton.attr('data-target', "#targetCollapse" + newTargetKey);
-    newCollapseButton.text('Target Destination #' + newTargetKey);
+    newCollapseButton.text('Target #' + newTargetKey);
 
     let newCollapseBody = newTargetCard.find('div.collapse');
     newCollapseBody.attr('id', "targetCollapse" + newTargetKey);
@@ -92,6 +94,13 @@ function add_new_target_to_accordion() {
     newTargetCard.show().appendTo(targetsAccordion);
     newTargetCard.get()[0].scrollIntoView();
     newTargetCard.find('.targetAddressInput').focus();
+
+    newTargetCard.find('input').focus(function () {
+        let targetAddress = newTargetCard.find('.targetAddressInput');
+        let buttonText = 'Target #' + newTargetKey + ": " + targetAddress.val();
+
+        newCollapseButton.text(buttonText);
+    });
 }
 
 function show_iframe_error_modal(error_message_html) {
@@ -108,10 +117,10 @@ function show_html_error_modal(title, message) {
     $('#errorModal').modal();
 }
 
-function toggle_action_buttons() {
+function toggle_loading_buttons() {
     $("#generateButton").toggle();
-    $("#zooplaButton").toggle();
     $('#generateButtonLoading').toggle();
+    $("#zooplaButton").toggle();
 }
 
 function build_targets_array() {
@@ -210,7 +219,7 @@ function check_targets_validity() {
 function show_zoopla_search_modal() {
     $('#zooplaSearchModal').modal();
 
-    $('#zooplaSearchButton').click(function (e) {
+    $('#zooplaSearchButton').off().click(function (e) {
         let rentBuyString = $('#rentOrBuyInput').val() === "Rent" ? "to-rent" : "for-sale";
         let sharedAccommodationString = $('#sharedAccomodationInput').val() === "No" ? "false" : "true";
         let retirementHomesString = $('#retirementHomesInput').val() === "No" ? "false" : "true";
@@ -238,7 +247,7 @@ function show_zoopla_search_modal() {
                     "type": "Feature",
                     "geometry": {
                         "type": "LineString",
-                        "coordinates": window.currentPolygonsData['combinedIntersection']['polygon']['coordinates'][0]
+                        "coordinates": window.currentAllTargetsData['result_intersection']['polygon']['coordinates'][0]
                     },
                     "properties": {}
                 }, 5
@@ -265,7 +274,7 @@ function request_and_plot_areas(
         contentType: 'application/json',
         data: JSON.stringify(allTargetsData),
         success: function (data) {
-            window.currentPolygonsData = data;
+            window.currentAllTargetsData = data;
             plot_results(data);
 
             if (successCallback) {
@@ -326,12 +335,6 @@ function plot_results(api_call_data) {
         );
 
         map.fitBounds(result_intersection['bounds']);
-
-        let centerOnce = function (e) {
-            map.panTo(result_intersection['centroid']);
-            map.off('moveend', centerOnce);
-        };
-        map.on('moveend', centerOnce);
     }
 }
 

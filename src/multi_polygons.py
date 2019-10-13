@@ -6,7 +6,7 @@ from functools import partial
 import pyproj
 import shapely.ops
 from shapely.affinity import scale
-from shapely.geometry import Point, MultiPoint, Polygon, LineString, mapping
+from shapely.geometry import Point, MultiPoint, Polygon, LineString, mapping, MultiPolygon
 
 from run_server import cache
 from src.utils import timeit
@@ -116,11 +116,19 @@ def join_multi_to_single_poly(multi_polygon_to_join):
 def join_multi_with_connecting_lines(multi_polygon_to_join):
     # logging.debug("join_multi_with_connecting_lines called with " + str(type(multi_polygon_to_join)))
 
-    previous_length = len(multi_polygon_to_join.geoms)
+    if hasattr(multi_polygon_to_join, 'geoms'):
+        previous_length = len(multi_polygon_to_join.geoms)
+    else:
+        previous_length = 1
 
-    connecting_lines_array = get_connecting_lines_for_multi(multi_polygon_to_join)
-    multi_polygon_to_join = union_polygons([multi_polygon_to_join, *connecting_lines_array])
+    # First, try simply unioning it, as it's possible this may be a multipoly which doesn't need any more loines
     multi_polygon_to_join = union_polygons(multi_polygon_to_join)
+
+    connecting_lines_array = []
+    if hasattr(multi_polygon_to_join, 'geoms'):
+        connecting_lines_array = get_connecting_lines_for_multi(multi_polygon_to_join)
+        multi_polygon_to_join = union_polygons([multi_polygon_to_join, *connecting_lines_array])
+        multi_polygon_to_join = union_polygons(multi_polygon_to_join)
 
     if hasattr(multi_polygon_to_join, 'geoms'):
         new_length = len(multi_polygon_to_join.geoms)
@@ -246,6 +254,15 @@ def convert_list_to_multi_polygon(multi_polygon_list):
 
     # If the object passed in isn't a list, assume it's already a MultiPolygon and do nothing, for easier recursion
     if type(multi_polygon_list) == list and len(multi_polygon_list) > 0:
+        multi_polygon_list = instanciate_multipolygons(multi_polygon_list)
+        logging.info("Multi list after instanciate_multipolygons length: " +
+                     str(len(multi_polygon_list)))
+
+        if type(multi_polygon_list[0]) is list:
+            multi_polygon_list = [item for sublist in multi_polygon_list for item in sublist]
+            logging.info("Squashed list of multis after instanciate_multipolygon into single list. New length: " +
+                         str(len(multi_polygon_list)))
+
         refined_polygons_list = refine_polygons(multi_polygon_list)
 
         # Once we have a buffered list of Polygons, combine into a single Polygon or MultiPolygon if there are gaps
@@ -281,13 +298,48 @@ def filter_multipoly_by_polygon(multi_polygon_to_filter, filter_polygon):
 
 @timeit
 @cache.cached()
-def refine_polygons(polygons_list):
+def instanciate_multipolygons(polygons_list):
+    if type(polygons_list) is not list:
+        raise Exception("instanciate_multipolygons expected a list, was given a " + str(type(polygons_list)))
+    if type(polygons_list[0]) is Polygon:
+        logging.warning("instanciate_multipolygons given a list of Polygons already, simply returning")
+        return polygons_list
+
     # For each polygon in the list, ensure it is actually a Polygon object and buffer to remove self-intersections
     for key, single_polygon in enumerate(polygons_list):
-        if type(single_polygon) is not Polygon:
-            single_polygon = instanciate_polygon(single_polygon)
+        if type(single_polygon) is list and \
+                type(single_polygon[0]) is list and \
+                type(single_polygon[0][0]) is list:
+            logging.info("Found nested multi polygon list in list, calling instanciate_multipolygons recursively")
+            polygons_list[key] = instanciate_multipolygons(single_polygon)
+        else:
+            polygons_list[key] = instanciate_polygon(single_polygon)
+
+    return polygons_list
+
+
+@timeit
+@cache.cached()
+def refine_polygons(polygons_list):
+    if type(polygons_list) is MultiPolygon:
+        logging.warning("refine_polygons was given a MultiPolygon - simply returning")
+        return polygons_list
+    if type(polygons_list) is Polygon:
+        logging.warning("refine_polygons was given a Polygon - simply returning")
+        return polygons_list
+    if type(polygons_list) is not list:
+        raise Exception("refine_polygons expected a list, was given a " + str(type(polygons_list)))
+    if type(polygons_list[0]) is MultiPolygon:
+        logging.warning("refine_polygons was given a list of MultiPolygons - simply returning")
+        return polygons_list
+    if type(polygons_list[0]) is not Polygon:
+        raise Exception("refine_polygons expected a list of Polygons, but elem 0 was a " + str(type(polygons_list[0])))
+
+    # For each polygon in the list, buffer to remove self-intersections and simplify slightly
+    for key, single_polygon in enumerate(polygons_list):
         single_polygon = simplify_polygon(single_polygon, 0.0000001)
-        polygons_list[key] = buffer_polygon(single_polygon)
+        single_polygon = buffer_polygon(single_polygon)
+        polygons_list[key] = simplify_polygon(single_polygon, 0.0000001)
     return polygons_list
 
 
@@ -306,6 +358,21 @@ def simplify_polygon(single_polygon, simplification_factor):
 @timeit
 def instanciate_polygon(coords_list):
     # Create a Shapely / GEOS Polygon object from a list of coordinate
+    if type(coords_list) is MultiPolygon:
+        logging.warning("instanciate_polygon was given a MultiPolygon - simply returning")
+        return coords_list
+    if type(coords_list) is Polygon:
+        logging.warning("instanciate_polygon was given a Polygon - simply returning")
+        return coords_list
+    if type(coords_list) is not list:
+        raise Exception("instanciate_polygon expected a list, was given a " + str(type(coords_list)))
+    if type(coords_list[0]) is Polygon:
+        logging.warning("instanciate_polygon was given a list of instanciated Polygons - simply returning")
+        return coords_list
+    if type(coords_list[0]) is not list or type(coords_list[0][0]) is not float:
+        raise Exception("instanciate_polygon was given a list in the wrong format. expected list of float tuple pairs, "
+                        + "but element 0 in the list was: " + str(type(coords_list[0])) + " - " + str(coords_list[0]))
+
     return Polygon(coords_list)
 
 
