@@ -15,6 +15,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 # Set up disk caching for complex computations, with max size 5GB and 1 year expiry
 cache = ucache.SqliteCache(filename='compute_cache.sqlite', cache_size=5000, timeout=32000000, compression=True)
+datacache = ucache.SqliteCache(filename='datasets/cache.sqlite', cache_size=5000, timeout=32000000, compression=True)
 
 
 @app.route('/')

@@ -86,11 +86,12 @@ def get_target_area_polygons(
             combined_transport_poly = combined_transport_poly.intersection(max_radius_polygon)
 
         combined_transport_box_poly = Polygon.from_bounds(*combined_transport_poly.bounds).buffer(0.001)
-        return_object['combined_transport_box'] = {
-            'label': 'Transport Bounding Box',
-            'polygon': combined_transport_box_poly,
-            'bounds': combined_transport_box_poly.bounds
-        }
+
+        # return_object['combined_transport_box'] = {
+        #     'label': 'Transport Bounding Box',
+        #     'polygon': combined_transport_box_poly,
+        #     'bounds': combined_transport_box_poly.bounds
+        # }
 
         if min_deprivation_score > 0:
             imd_filter_limited_polygon = imd_tools.get_simplified_clipped_uk_deprivation_polygon(
