@@ -262,6 +262,10 @@ function add_new_target_to_accordion() {
         newCollapseButton.text(buttonText);
     });
 
+    newTargetCard.find('.card-header button.close').click(function () {
+        newTargetCard.remove();
+    });
+
     return newTargetCard;
 }
 
