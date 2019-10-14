@@ -6,6 +6,8 @@ window.mainMap = {
 
 function map_loaded(map) {
     window.mainMap.map = map;
+
+    check_and_load_search_from_url_hash();
 }
 
 $(function () {
@@ -24,10 +26,11 @@ $(function () {
         return false;
     });
 
-    $("#loadSearchButton").click(function (e) {
+    $("#loadLastSearchButton").click(function (e) {
         let saved_searches = get_saved_searches();
-        if (saved_searches[0]) {
-            load_saved_search(saved_searches[saved_searches.length - 1]);
+        if (saved_searches.length) {
+            let last_saved_search = saved_searches[saved_searches.length - 1];
+            load_saved_search(last_saved_search);
         } else {
             show_html_modal("No Saved Searches", "You must save a search first before you can load it!");
         }
@@ -58,8 +61,16 @@ $(function () {
     });
 });
 
+function check_and_load_search_from_url_hash() {
+    if (window.location.hash) {
+        let search_to_load = window.location.hash.split('#')[1];
+        search_to_load = JSON.parse(decodeURIComponent(search_to_load));
+        load_saved_search(search_to_load);
+    }
+}
+
 function show_saved_searches_modal() {
-    let saved_searches = get_saved_searches();
+    let saved_searches = get_saved_searches().reverse();
 
     let prop_key_map = {
         walking: "Walk",
@@ -77,15 +88,33 @@ function show_saved_searches_modal() {
 
     let saved_searches_html = '<ul id="savedSearchesList" class="list-group">';
 
-    saved_searches.forEach(function (target_search, search_index) {
+    saved_searches.forEach(function (single_search, search_index) {
         saved_searches_html += '<li class="list-group-item savedSearchRow">';
 
-        saved_searches_html += '<div class="form-row">Search #' + (parseInt(search_index) + 1) + '</div>';
+        let single_search_name = 'Search #' + (parseInt(search_index) + 1);
+        if (single_search.hasOwnProperty('name')) {
+            single_search_name = single_search['name'];
+        }
 
-        for (let target_key in target_search) {
-            if (!target_search.hasOwnProperty(target_key)) continue;
+        let single_search_title = single_search_name;
+        if (single_search.hasOwnProperty('saved_date')) {
+            let saved_date = new Date(single_search['saved_date']);
+            single_search_title = single_search_name + ' - saved date: ' + saved_date.toLocaleString();
+        } else {
+            single_search_title = single_search_name + ' - saved by an old version of this tool!';
+        }
 
-            let single_target = target_search[target_key];
+        saved_searches_html += '<div class="form-row">' + single_search_title + '</div>';
+
+        let single_search_targets = single_search;
+        if (single_search_targets.hasOwnProperty('targets')) {
+            single_search_targets = single_search_targets['targets']
+        }
+
+        for (let target_key in single_search_targets) {
+            if (!single_search_targets.hasOwnProperty(target_key)) continue;
+
+            let single_target = single_search_targets[target_key];
 
             saved_searches_html += '<div class="form-row singleTargetHeading"><div class="col-12">';
             saved_searches_html += '  <h6>Target #' + (parseInt(target_key) + 1) + ': ' + single_target['target'] + '</h6>';
@@ -114,21 +143,42 @@ function show_saved_searches_modal() {
 
         saved_searches_html +=
             '<div class="form-row savedSearchButtons">' +
-            '    <div class="form-group col-6">' +
+            '    <div class="form-group col-3">' +
             '        <button type="button" class="btn btn-outline-primary btn-block loadSearch" ' +
             '            data-searchindex="' + search_index + '">' +
-            '            Load Search' +
+            '            Load' +
             '        </button>' +
             '    </div>' +
-            '    <div class="form-group col-6">' +
+            '    <div class="form-group col-3">' +
+            '        <button type="button" class="btn btn-outline-success btn-block shareSearchURL" ' +
+            '            data-searchindex="' + search_index + '">' +
+            '            Share' +
+            '        </button>' +
+            '    </div>' +
+            '    <div class="form-group col-3">' +
+            '        <button type="button" class="btn btn-outline-secondary btn-block copySearch" ' +
+            '            data-searchindex="' + search_index + '">' +
+            '            Copy to Clipboard' +
+            '        </button>' +
+            '    </div>' +
+            '    <div class="form-group col-3">' +
             '        <button type="button" class="btn btn-outline-danger btn-block deleteSearch" ' +
             '            data-searchindex="' + search_index + '">' +
-            '            Delete Search' +
+            '            Delete' +
             '        </button>' +
             '    </div>' +
             '</div>';
         saved_searches_html += '</li>';
     });
+
+    saved_searches_html +=
+        '<div class="form-row mt-3">' +
+        '    <div class="form-group col-12">' +
+        '        <button type="button" class="btn btn-outline-secondary loadSearchFromClipboard">' +
+        '            Load from Clipboard' +
+        '        </button>' +
+        '    </div>' +
+        '</div>';
 
     saved_searches_html += "</ul>";
 
@@ -142,20 +192,78 @@ function show_saved_searches_modal() {
         return false;
     });
 
+    $("#savedSearchesList button.shareSearchURL").click(function (e) {
+        let search_index = $(this).data('searchindex');
+
+        let search_json_enc = encodeURIComponent(JSON.stringify(get_saved_searches()[search_index]));
+
+        let root_url = location.protocol + '//' + location.host;
+        let share_url = root_url + '/#' + search_json_enc;
+
+        navigator.clipboard.writeText(share_url).then(function () {
+            alert("Copied sharing URL to clipboard!");
+        });
+
+        return false;
+    });
+
+    $("#savedSearchesList button.copySearch").click(function (e) {
+        let search_index = $(this).data('searchindex');
+        let search_json = JSON.stringify(get_saved_searches()[search_index]);
+
+        navigator.clipboard.writeText(search_json).then(function () {
+            alert("Copied search data to clipboard!");
+        });
+
+        return false;
+    });
+
     $("#savedSearchesList button.deleteSearch").click(function (e) {
         let search_index = $(this).data('searchindex');
         delete_saved_search(search_index);
         show_saved_searches_modal();
         return false;
     });
+
+    $("#savedSearchesList button.loadSearchFromClipboard").click(function (e) {
+        navigator.clipboard.readText().then(function (clipboard_text) {
+            try {
+                let new_search_object = JSON.parse(clipboard_text);
+                save_search(new_search_object);
+                show_saved_searches_modal();
+            } catch (e) {
+                alert("Clipboard did not contain valid saved search data!");
+            }
+        });
+
+        return false;
+    });
 }
 
 function save_current_search() {
+    if (check_targets_validity() === false) {
+        return;
+    }
+
+    $('#saveSearchButton').hide();
+    $('#saveSearchButtonLoading').show();
+
+    save_search(get_current_search());
+
+    setTimeout(function () {
+        $('#saveSearchButtonSaved').show();
+        $('#saveSearchButtonLoading').hide();
+
+        setTimeout(function () {
+            $('#saveSearchButton').show();
+            $('#saveSearchButtonSaved').hide();
+        }, 500);
+    }, 500);
+}
+
+function save_search(search_object) {
     let saved_searches = get_saved_searches();
-    let current_search = build_targets_array();
-
-    saved_searches.push(current_search);
-
+    saved_searches.push(search_object);
     localStorage.setItem("hah_saved_searches", JSON.stringify(saved_searches));
 }
 
@@ -165,7 +273,11 @@ function delete_saved_search(index) {
     localStorage.setItem("hah_saved_searches", JSON.stringify(saved_searches));
 }
 
-function load_saved_search(search_targets_array) {
+function load_saved_search(search_object) {
+    let search_targets_array = search_object
+    if (search_targets_array.hasOwnProperty('targets')) {
+        search_targets_array = search_targets_array['targets']
+    }
     $('#targetsAccordion .targetCard').remove();
 
     search_targets_array.forEach(function (target_search, target_index) {
@@ -188,6 +300,14 @@ function load_saved_search(search_targets_array) {
     validate_and_submit_request();
 }
 
+function get_current_search() {
+    let current_search_targets = build_targets_array();
+    return {
+        saved_date: new Date().toISOString(),
+        targets: current_search_targets
+    };
+}
+
 function get_saved_searches() {
     let saved_searches = localStorage.getItem("hah_saved_searches");
     if (saved_searches === null) {
@@ -208,6 +328,7 @@ function validate_and_submit_request() {
     request_and_plot_areas(
         build_targets_array(),
         function () {
+            window.location.hash = encodeURIComponent(JSON.stringify(get_current_search()));
             toggle_loading_buttons();
 
             $("#propertyButton").show();

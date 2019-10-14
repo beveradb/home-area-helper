@@ -297,6 +297,33 @@ def filter_multipoly_by_polygon(multi_polygon_to_filter, filter_polygon):
 
 
 @timeit
+def filter_multipoly_by_min_area(multi_polygon_to_filter, min_area_miles):
+    multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
+
+    if hasattr(multi_polygon_to_filter, 'geoms'):
+        logging.debug("Length of MultiPolygon before area filter: " + str(len(multi_polygon_to_filter.geoms)))
+
+        filtered_polygons_list = []
+        for single_polygon in multi_polygon_to_filter:
+            if single_polygon.area > min_area_miles:
+                logging.debug("Keeping large enough single_polygon.area = " + str("{0:.6f}".format(single_polygon.area)))
+                filtered_polygons_list.append(single_polygon)
+            else:
+                logging.debug("Excluding small single_polygon.area = " + str("{0:.6f}".format(single_polygon.area)))
+
+        multi_polygon_to_filter = union_polygons(filtered_polygons_list)
+
+        if hasattr(multi_polygon_to_filter, 'geoms'):
+            new_length = len(multi_polygon_to_filter.geoms)
+        else:
+            new_length = 1
+
+        logging.debug("Length of MultiPolygon after area filter: " + str(new_length))
+
+    return multi_polygon_to_filter
+
+
+@timeit
 @cache.cached()
 def instanciate_multipolygons(polygons_list):
     if type(polygons_list) is not list:

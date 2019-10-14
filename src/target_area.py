@@ -71,9 +71,12 @@ def get_target_area_polygons(
                 'polygon': transport_poly
             }
 
+    travel_isochrones_to_combine = multi_polygons.filter_multipoly_by_min_area(travel_isochrones_to_combine,
+                                                                               min_area_miles)
+
     combined_transport_poly = multi_polygons.join_multi_to_single_poly(travel_isochrones_to_combine)
 
-    if type(combined_transport_poly) is not list:
+    if type(combined_transport_poly) is not list and combined_transport_poly.bounds:
         # Buffer to remove any self-intersections
         combined_transport_poly = combined_transport_poly.buffer(0.00001)
 
@@ -187,7 +190,9 @@ def get_target_areas_polygons_json(targets_params: list):
             buffer_factor=float(params['buffer'])
         )
 
-        intersections_to_combine.append(target_results['result_intersection']['polygon'])
+        if target_results['result_intersection']['polygon'] and \
+                target_results['result_intersection']['polygon'] is not None:
+            intersections_to_combine.append(target_results['result_intersection']['polygon'])
 
         # Convert all of the response Polygon objects to GeoJSON
         for key, value in target_results.items():
@@ -196,15 +201,17 @@ def get_target_areas_polygons_json(targets_params: list):
 
         response_object['targets_results'].append(target_results)
 
-    # Add result_intersection to response object, with bounds and centroid
-    joined_intersections = multi_polygons.join_multi_to_single_poly(intersections_to_combine)
+    if intersections_to_combine:
+        logging.debug(intersections_to_combine)
+        # Add result_intersection to response object, with bounds and centroid
+        joined_intersections = multi_polygons.join_multi_to_single_poly(intersections_to_combine)
 
-    response_object['result_intersection'] = {
-        'label': 'Combined Result',
-        'bounds': joined_intersections.bounds,
-        'centroid': mapping(joined_intersections.centroid)['coordinates'],
-        'polygon': mapping(joined_intersections)
-    }
+        response_object['result_intersection'] = {
+            'label': 'Combined Result',
+            'bounds': joined_intersections.bounds,
+            'centroid': mapping(joined_intersections.centroid)['coordinates'],
+            'polygon': mapping(joined_intersections)
+        }
 
     return json.dumps(response_object)
 

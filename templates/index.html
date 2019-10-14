@@ -111,15 +111,15 @@
                                             <input type="number" class="form-control maxRadiusInput"
                                                    placeholder="" step="0.01">
                                             <small id="maxRadiusHelp" class="form-text text-muted">
-                                                Limit resulting shape to max radius. May hep filter out outliers.
+                                                Limit resulting shape to max radius. May help filter out outliers.
                                             </small>
                                         </div>
                                         <div class="form-group col-12 col-xl-6">
-                                            <label for="minAreaRadiusInput">Min. Area (mi)</label>
+                                            <label for="minAreaRadiusInput">Min. Area (deg)</label>
                                             <input type="number" class="form-control minAreaRadiusInput"
-                                                   placeholder="" step="0.0000001">
+                                                   placeholder="" step="0.0000001" value="0.00001">
                                             <small id="minAreaRadiusInputHelp" class="form-text text-muted">
-                                                Exclude small, separated areas. May hep filter out outliers.
+                                                Exclude small, separated areas. May help filter out outliers.
                                             </small>
                                         </div>
                                     </div>
@@ -127,7 +127,7 @@
                                         <div class="form-group col-12 col-xl-6">
                                             <label for="simplifyFactorInput">Simplify (deg)</label>
                                             <input type="number" class="form-control simplifyFactorInput"
-                                                   placeholder="" max="0.1" step="0.00000001" value="0.005">
+                                                   placeholder="" max="0.1" step="0.00000001" value="0.0001">
                                             <small id="simplifyFactorInputHelp" class="form-text text-muted">
                                                 Simplify resulting shape (e.g. 0.01). May help shorten long property
                                                 URL.
@@ -136,7 +136,7 @@
                                         <div class="form-group col-12 col-xl-6">
                                             <label for="bufferFactorInput">Buffer (deg)</label>
                                             <input type="number" class="form-control bufferFactorInput"
-                                                   placeholder="" max="0.1" step="0.00000001" value="0.005">
+                                                   placeholder="" max="0.1" step="0.00000001" value="0.0001">
                                             <small id="bufferFactorInputHelp" class="form-text text-muted">
                                                 Buffer resulting shape (e.g. 0.01). May help shorten long property URL.
                                             </small>
@@ -177,9 +177,18 @@
                         <button type="button" class="btn btn-outline-success btn-block" id="saveSearchButton">
                             Save Search
                         </button>
+                        <button type="button" class="btn btn-outline-success btn-block" id="saveSearchButtonLoading"
+                                style="display: none;" disabled>
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Saving...
+                        </button>
+                        <button type="button" class="btn btn-success btn-block" id="saveSearchButtonSaved"
+                                style="display: none;" disabled>
+                            ✓
+                        </button>
                     </div>
                     <div class="form-group col-4">
-                        <button type="button" class="btn btn-outline-primary btn-block" id="loadSearchButton">
+                        <button type="button" class="btn btn-outline-primary btn-block" id="loadLastSearchButton">
                             Load Last Saved
                         </button>
                     </div>

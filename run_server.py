@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 # Set up debug logging to console
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 # Set up disk caching for complex computations, with max size 5GB and 1 year expiry
 cache = ucache.SqliteCache(filename='compute_cache.sqlite', cache_size=5000, timeout=32000000, compression=True)

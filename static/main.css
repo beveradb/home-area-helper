@@ -159,9 +159,15 @@ body, html {
 
 .form-row.controlActionButtons button {
     height: 100%;
+    margin-top: 0;
 }
 
 .savedSearchValueGroup {
-    flex: 0 0 10%;
+    flex: 0 0 11%;
     max-width: 15%;
 }
+
+#saveSearchButtonSaved {
+    font-size: 2em;
+}
+
