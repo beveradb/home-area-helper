@@ -16,8 +16,8 @@ $(function () {
         return false;
     });
 
-    $("#clearTargetsButton").click(function (e) {
-        $('#targetsAccordion .targetCard').remove();
+    $("#clearSearchButton").click(function (e) {
+        clear_current_search();
         return false;
     });
 
@@ -70,7 +70,7 @@ function check_and_load_search_from_url_hash() {
 }
 
 function show_saved_searches_modal() {
-    let saved_searches = get_saved_searches().reverse();
+    let saved_searches = get_saved_searches();
 
     let prop_key_map = {
         walking: "Walk",
@@ -88,10 +88,12 @@ function show_saved_searches_modal() {
 
     let saved_searches_html = '<ul id="savedSearchesList" class="list-group">';
 
-    saved_searches.forEach(function (single_search, search_index) {
+    for (let search_index = saved_searches.length; search_index-- > 0;) {
+        let single_search = saved_searches[search_index];
+
         saved_searches_html += '<li class="list-group-item savedSearchRow">';
 
-        let single_search_name = 'Search #' + (parseInt(search_index) + 1);
+        let single_search_name = 'Search #' + (search_index + 1);
         if (single_search.hasOwnProperty('name')) {
             single_search_name = single_search['name'];
         }
@@ -169,7 +171,7 @@ function show_saved_searches_modal() {
             '    </div>' +
             '</div>';
         saved_searches_html += '</li>';
-    });
+    }
 
     saved_searches_html +=
         '<div class="form-row mt-3">' +
@@ -318,6 +320,14 @@ function get_saved_searches() {
     return saved_searches;
 }
 
+function clear_current_search() {
+    $('#targetsAccordion .targetCard').remove();
+    window.location.hash = "";
+    clear_map(window.mainMap.map);
+    $('#searchActionButtons').hide();
+    $("#propertyButton").hide();
+}
+
 function validate_and_submit_request() {
     if (check_targets_validity() === false) {
         return;
@@ -331,6 +341,7 @@ function validate_and_submit_request() {
             window.location.hash = encodeURIComponent(JSON.stringify(get_current_search()));
             toggle_loading_buttons();
 
+            $('#searchActionButtons').show();
             $("#propertyButton").show();
 
             // For UX on mobile devices where map starts off screen
