@@ -14,7 +14,7 @@ from src.utils import timeit
 
 
 @timeit
-@cache.cached()
+# @cache.cached()
 def get_target_area_polygons(
         target_location_address: str,
         max_walking_time_mins: int,
@@ -23,7 +23,7 @@ def get_target_area_polygons(
         max_coach_time_mins: int,
         max_train_time_mins: int,
         max_driving_time_mins: int,
-        min_deprivation_score: int,
+        min_deprivation_rank: int,
         min_area_miles: float,
         max_radius_miles: float,
         simplify_factor: float,
@@ -39,7 +39,7 @@ def get_target_area_polygons(
         'coords': target_lng_lat
     }
 
-    travel_isochrones_to_combine = []
+    result_polygons = []
     max_radius_polygon = multi_polygons.get_bounding_circle_for_point(target_lng_lat, max_radius_miles)
     result_intersection = max_radius_polygon
 
@@ -63,7 +63,7 @@ def get_target_area_polygons(
             target_lng_lat, transport['mode'], transport['max_time'], max_radius_polygon)
 
         if transport_poly is not None:
-            travel_isochrones_to_combine.append(transport_poly)
+            result_polygons.append(transport_poly)
             transport_poly = multi_polygons.join_multi_to_single_poly(transport_poly)
 
             return_object[transport['mode']] = {
@@ -71,57 +71,37 @@ def get_target_area_polygons(
                 'polygon': transport_poly
             }
 
-    travel_isochrones_to_combine = multi_polygons.filter_multipoly_by_min_area(travel_isochrones_to_combine,
-                                                                               min_area_miles)
+    logging.info("Total result_polygons with all transports: " + str(len(result_polygons)))
 
-    combined_transport_poly = multi_polygons.join_multi_to_single_poly(travel_isochrones_to_combine)
+    if min_area_miles > 0:
+        result_polygons = multi_polygons.filter_multipoly_by_min_area(result_polygons, min_area_miles)
 
-    if type(combined_transport_poly) is not list and combined_transport_poly.bounds:
-        # Buffer to remove any self-intersections
-        combined_transport_poly = combined_transport_poly.buffer(0.00001)
+    result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
+    logging.info("Total result_polygons after min area filter: " + str(result_polygons_length))
 
-        return_object['combined_transport'] = {
-            'label': 'Combined Transport',
-            'polygon': combined_transport_poly
-        }
+    if result_polygons_length > 0:
+        # combined_transport_poly = multi_polygons.join_multi_to_single_poly(result_polygons)
+        #
+        # if type(combined_transport_poly) is not list and combined_transport_poly.bounds:
+        #     # Buffer to remove any self-intersections
+        #     combined_transport_poly = combined_transport_poly.buffer(0.00001)
+        #
+        #     return_object['combined_transport'] = {
+        #         'label': 'Combined Transport',
+        #         'polygon': combined_transport_poly
+        #     }
 
-        if max_radius_polygon is not None:
-            combined_transport_poly = combined_transport_poly.intersection(max_radius_polygon)
+        if min_deprivation_rank > 0:
+            result_polygons = imd_tools.filter_intersect_multipoly_by_min_rank(result_polygons, min_deprivation_rank)
 
-        combined_transport_box_poly = Polygon.from_bounds(*combined_transport_poly.bounds).buffer(0.001)
+            result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
+            logging.info("Total result_polygons after min_deprivation_rank filter: " + str(result_polygons_length))
 
-        # return_object['combined_transport_box'] = {
-        #     'label': 'Transport Bounding Box',
-        #     'polygon': combined_transport_box_poly,
-        #     'bounds': combined_transport_box_poly.bounds
-        # }
+        result_polygons = multi_polygons.convert_list_to_refined_multipoly(result_polygons,
+                                                                           simplify_factor,
+                                                                           buffer_factor)
 
-        if min_deprivation_score > 0:
-            imd_filter_limited_polygon = imd_tools.get_simplified_clipped_uk_deprivation_polygon(
-                min_deprivation_score, combined_transport_box_poly
-            )
-
-            return_object['deprivation'] = {
-                'label': 'Deprivation Score > ' + str(min_deprivation_score),
-                'polygon': imd_filter_limited_polygon
-            }
-
-            imd_filter_limited_polygon = imd_filter_limited_polygon.buffer(0.00001)
-            result_intersection = combined_transport_poly.intersection(imd_filter_limited_polygon)
-
-            result_intersection = multi_polygons.join_multi_to_single_poly(result_intersection)
-        else:
-            result_intersection = combined_transport_poly
-
-        if simplify_factor > 0:
-            return_object['pre_simplify_result'] = {
-                'label': 'Result pre-simplify: ' + str(simplify_factor),
-                'polygon': result_intersection
-            }
-
-            # Simplify resulting polygon somewhat as URL can't be too long or Zoopla throws HTTP 414 error
-            result_intersection = result_intersection.buffer(buffer_factor)
-            result_intersection = result_intersection.simplify(simplify_factor)
+        result_intersection = multi_polygons.join_multi_to_single_poly(result_polygons)
 
     return_object['result_intersection'] = {
         'label': 'Intersection',
@@ -177,7 +157,7 @@ def get_target_areas_polygons_json(targets_params: list):
     for target_index, params in enumerate(targets_params):
         target_results = get_target_area_polygons(
             target_location_address=str(params['target']),
-            min_deprivation_score=int(params['deprivation']),
+            min_deprivation_rank=int(params['deprivation']),
             max_walking_time_mins=int(params['walking']),
             max_cycling_time_mins=int(params['cycling']),
             max_bus_time_mins=int(params['bus']),

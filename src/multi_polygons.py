@@ -43,7 +43,7 @@ def get_bounding_circle_for_point(target_lng_lat, bounding_box_radius_miles):
 @cache.cached()
 def filter_uk_multipoly_by_target_radius(multi_polygon_to_filter, target_lng_lat, max_distance_limit_miles):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
-    multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
+    multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
 
     wgs84_to_uk_project = partial(pyproj.transform, pyproj.Proj(init='epsg:4326'), pyproj.Proj(init='epsg:27700'))
 
@@ -62,7 +62,7 @@ def filter_uk_multipoly_by_target_radius(multi_polygon_to_filter, target_lng_lat
 @cache.cached()
 def filter_uk_multipoly_by_bounding_box(multi_polygon_to_filter, wgs84_bounding_polygon):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
-    multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
+    multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
 
     wgs84_to_uk_project = partial(pyproj.transform, pyproj.Proj(init='epsg:4326'), pyproj.Proj(init='epsg:27700'))
     uk_bounds_polygon = reproject_polygon(wgs84_to_uk_project, wgs84_bounding_polygon)
@@ -79,7 +79,7 @@ def filter_uk_multipoly_by_bounding_box(multi_polygon_to_filter, wgs84_bounding_
 @cache.cached()
 def simplify_multi(multi_polygon_to_simplify, simplification_factor):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
-    multi_polygon_to_simplify = convert_list_to_multi_polygon(multi_polygon_to_simplify)
+    multi_polygon_to_simplify = convert_list_to_refined_multipoly(multi_polygon_to_simplify)
 
     if multi_polygon_to_simplify is Polygon:
         return multi_polygon_to_simplify.simplify(simplification_factor)
@@ -101,7 +101,7 @@ def join_multi_to_single_poly(multi_polygon_to_join):
     # logging.debug("join_multi_to_single_poly called with " + str(type(multi_polygon_to_join)))
 
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
-    multi_polygon_to_join = convert_list_to_multi_polygon(multi_polygon_to_join)
+    multi_polygon_to_join = convert_list_to_refined_multipoly(multi_polygon_to_join)
 
     # Recursively join all polygons in this multipolygon with lines until it's no longer a multipolygon
     # If the object doesn't have a "geoms" property, it must already be a single Polygon object anyway
@@ -179,29 +179,6 @@ def get_connecting_lines_for_multi(multi_polygon_to_join):
 
 
 @timeit
-def get_line_connecting_single_point_to_others(single_point, other_points):
-    other_points_multipoint = MultiPoint(other_points)
-    nearest_points = get_nearest_points(single_point, other_points_multipoint)
-
-    single_connecting_line_polygon = get_connecting_line_polygon(
-        nearest_points[0], nearest_points[1]
-    )
-
-    return single_connecting_line_polygon
-
-
-@timeit
-def get_line_connecting_single_polygon_to_others(single_polygon, other_polygons):
-    nearest_polygon = get_nearest_polygon_from_list(single_polygon, other_polygons)
-
-    single_connecting_line_polygon = get_connecting_line_polygon(
-        single_polygon.representative_point(), nearest_polygon.representative_point()
-    )
-
-    return single_connecting_line_polygon
-
-
-@timeit
 @cache.cached()
 def get_nearest_points_between_polygon_and_others(single_polygon, other_polygons):
     this_polygon_multipoint = MultiPoint(single_polygon.exterior.coords)
@@ -240,17 +217,9 @@ def get_multipoint_for_all_polygons_coords(polygons_list):
 
 
 @timeit
-def get_connecting_line_polygon(point_1, point_2):
-    return simplify_polygon(buffer_polygon(
-        LineString([point_1, point_2]),
-        0.0000000001
-    ), 0.0000000001)
-
-
-@timeit
 @cache.cached()
-def convert_list_to_multi_polygon(multi_polygon_list):
-    # logging.debug("convert_list_to_multi_polygon called with " + str(type(multi_polygon_list)))
+def convert_list_to_refined_multipoly(multi_polygon_list, simplify_amount=0.0000001, buffer_amount=0.0000001):
+    # logging.debug("convert_list_to_refined_multipoly called with " + str(type(multi_polygon_list)))
 
     # If the object passed in isn't a list, assume it's already a MultiPolygon and do nothing, for easier recursion
     if type(multi_polygon_list) == list and len(multi_polygon_list) > 0:
@@ -263,7 +232,13 @@ def convert_list_to_multi_polygon(multi_polygon_list):
             logging.info("Squashed list of multis after instanciate_multipolygon into single list. New length: " +
                          str(len(multi_polygon_list)))
 
-        refined_polygons_list = refine_polygons(multi_polygon_list)
+        if simplify_amount == 0:
+            simplify_amount = 0.0000001
+
+        if buffer_amount == 0:
+            buffer_amount = 0.0000001
+
+        refined_polygons_list = refine_polygons(multi_polygon_list, simplify_amount, buffer_amount)
 
         # Once we have a buffered list of Polygons, combine into a single Polygon or MultiPolygon if there are gaps
         multi_polygon_list = union_polygons(refined_polygons_list)
@@ -274,7 +249,7 @@ def convert_list_to_multi_polygon(multi_polygon_list):
 @timeit
 @cache.cached()
 def filter_multipoly_by_polygon(multi_polygon_to_filter, filter_polygon):
-    multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
+    multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
 
     if hasattr(multi_polygon_to_filter, 'geoms'):
         logging.debug("Length of MultiPolygon before filter: " + str(len(multi_polygon_to_filter.geoms)))
@@ -297,8 +272,9 @@ def filter_multipoly_by_polygon(multi_polygon_to_filter, filter_polygon):
 
 
 @timeit
+@cache.cached()
 def filter_multipoly_by_min_area(multi_polygon_to_filter, min_area_miles):
-    multi_polygon_to_filter = convert_list_to_multi_polygon(multi_polygon_to_filter)
+    multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
 
     if hasattr(multi_polygon_to_filter, 'geoms'):
         logging.debug("Length of MultiPolygon before area filter: " + str(len(multi_polygon_to_filter.geoms)))
@@ -306,7 +282,8 @@ def filter_multipoly_by_min_area(multi_polygon_to_filter, min_area_miles):
         filtered_polygons_list = []
         for single_polygon in multi_polygon_to_filter:
             if single_polygon.area > min_area_miles:
-                logging.debug("Keeping large enough single_polygon.area = " + str("{0:.6f}".format(single_polygon.area)))
+                logging.debug(
+                    "Keeping large enough single_polygon.area = " + str("{0:.6f}".format(single_polygon.area)))
                 filtered_polygons_list.append(single_polygon)
             else:
                 logging.debug("Excluding small single_polygon.area = " + str("{0:.6f}".format(single_polygon.area)))
@@ -347,7 +324,7 @@ def instanciate_multipolygons(polygons_list):
 
 @timeit
 @cache.cached()
-def refine_polygons(polygons_list):
+def refine_polygons(polygons_list, simplify_amount=0.0000001, buffer_amount=0.0000001):
     if type(polygons_list) is MultiPolygon:
         logging.warning("refine_polygons was given a MultiPolygon - simply returning")
         return polygons_list
@@ -364,10 +341,41 @@ def refine_polygons(polygons_list):
 
     # For each polygon in the list, buffer to remove self-intersections and simplify slightly
     for key, single_polygon in enumerate(polygons_list):
-        single_polygon = simplify_polygon(single_polygon, 0.0000001)
-        single_polygon = buffer_polygon(single_polygon)
-        polygons_list[key] = simplify_polygon(single_polygon, 0.0000001)
+        single_polygon = simplify_polygon(single_polygon, simplify_amount)
+        single_polygon = buffer_polygon(single_polygon, buffer_amount)
+        polygons_list[key] = simplify_polygon(single_polygon, simplify_amount)
     return polygons_list
+
+
+@timeit
+def get_line_connecting_single_point_to_others(single_point, other_points):
+    other_points_multipoint = MultiPoint(other_points)
+    nearest_points = get_nearest_points(single_point, other_points_multipoint)
+
+    single_connecting_line_polygon = get_connecting_line_polygon(
+        nearest_points[0], nearest_points[1]
+    )
+
+    return single_connecting_line_polygon
+
+
+@timeit
+def get_line_connecting_single_polygon_to_others(single_polygon, other_polygons):
+    nearest_polygon = get_nearest_polygon_from_list(single_polygon, other_polygons)
+
+    single_connecting_line_polygon = get_connecting_line_polygon(
+        single_polygon.representative_point(), nearest_polygon.representative_point()
+    )
+
+    return single_connecting_line_polygon
+
+
+@timeit
+def get_connecting_line_polygon(point_1, point_2):
+    return simplify_polygon(buffer_polygon(
+        LineString([point_1, point_2]),
+        0.0000000001
+    ), 0.0000000001)
 
 
 @timeit
