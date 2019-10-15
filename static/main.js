@@ -242,6 +242,29 @@ function show_saved_searches_modal() {
     });
 }
 
+function save_last_property_filters() {
+    let last_property_filters = {};
+    $('#propertyParametersForm .form-control').each(function (index, elem) {
+        last_property_filters[$(elem).attr('id')] = $(elem).val();
+    });
+    localStorage.setItem("hah_last_property_filters", JSON.stringify(last_property_filters));
+}
+
+function load_last_property_filters() {
+    let last_property_filters = localStorage.getItem("hah_last_property_filters");
+    if (last_property_filters) {
+        last_property_filters = JSON.parse(last_property_filters);
+    } else {
+        last_property_filters = {};
+    }
+
+    for (let key in last_property_filters) {
+        if (!last_property_filters.hasOwnProperty(key)) continue;
+
+        $('#' + key).val(last_property_filters[key]);
+    }
+}
+
 function save_current_search() {
     if (check_targets_validity() === false) {
         return;
@@ -512,20 +535,42 @@ function check_targets_validity() {
 function show_property_search_modal() {
     $('#propertySearchModal').modal();
 
+    load_last_property_filters();
+
     $('#zooplaSearchButton').off().click(function (e) {
+        save_last_property_filters();
         window.open(build_zoopla_url(), '_blank');
     });
 
     $('#rightmoveSearchButton').off().click(function (e) {
+        save_last_property_filters();
         window.open(build_rightmove_url(), '_blank');
+    });
+
+    $('#rightmoveDrawButton').off().click(function (e) {
+        save_last_property_filters();
+        window.open(build_rightmove_url("draw-a-search.html"), '_blank');
     });
 }
 
-function build_rightmove_url() {
-    let url = "https://www.rightmove.co.uk/property-" + $('#rentOrBuyInput').val() + "/map.html";
-    url += '?locationIdentifier=USERDEFINEDAREA';
+function build_rightmove_url(mode = "map.html") {
+//     https://www.rightmove.co.uk/ajax/defineyourarea/savearea.html
+//
+//         locationIdentifier=USERDEFINEDAREA^{"polylines":"qtlyHb}W_[|dBcsAc`BtNcfCxiByg@bgAny@wXz|Dww@glA"}
+//         &name=TestShape
+//         &polygon=qtlyHb}W_[|dBcsAc`BtNcfCxiByg@bgAny@wXz|Dww@glA
+//         &channelUri=/property-to-rent
+//         &overwrite=
 
-    url += '^{"polylines":"' + encodeURIComponent(build_polyline_for_url()) + '"}';
+
+    let url = "https://www.rightmove.co.uk/property-" + $('#rentOrBuyInput').val();
+
+    url += "/" + mode + "?";
+
+    url += 'searchLocation=' + encodeURIComponent($('#targetCollapse1 .targetAddressInput').val());
+    url += '&useLocationIdentifier=false';
+
+    url += '&locationIdentifier=USERDEFINEDAREA^{"polylines":"' + encodeURIComponent(build_polyline_for_url()) + '"}';
 
     url += '&maxBedrooms=' + $('#maxBedsInput').val().toLowerCase();
     url += '&minBedrooms=' + $('#minBedsInput').val().toLowerCase();
@@ -534,10 +579,20 @@ function build_rightmove_url() {
     url += '&minPrice=' + $('#minPriceInput').val().toLowerCase();
 
     url += '&numberOfPropertiesPerPage=499';
+    url += '&includeLetAgreed=false';
 
     url += '&viewType=MAP';
     url += '&furnishTypes=';
     url += '&keywords=' + encodeURIComponent($('#customKeywordsInput').val().toLowerCase());
+
+    switch ($('#rentOrBuyInput').val()) {
+        case "for-sale":
+            url += '&channel=BUY';
+            break;
+        case "to-rent":
+            url += '&channel=RENT';
+            break;
+    }
 
     switch ($('#propertyTypeInput').val()) {
         case "property":
@@ -545,6 +600,7 @@ function build_rightmove_url() {
             break;
         case "flats":
             url += '&propertyTypes=flat';
+            url += '&primaryDisplayPropertyType=flats';
             break;
         case "houses":
             url += '&propertyTypes=detached,semi-detached,terraced,bungalow';
