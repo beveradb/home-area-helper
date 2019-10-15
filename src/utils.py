@@ -54,7 +54,11 @@ def log_method_timings():
     methods_timings_cumulative = {}
 
 
-def download_file(url, local_filename):
+def download_file(url, target_dir, local_filename):
+    command = "mkdir -p " + target_dir
+    logging.debug("Executing command: " + command)
+    logging.debug("Execution response: " + str(os.system(command)))
+
     command = "curl -s -L -o " + local_filename + " " + url
     logging.debug("Executing command: " + command)
     logging.debug("Execution response: " + str(os.system(command)))
@@ -67,7 +71,7 @@ def preload_files(url_root, files_to_check):
 
         if not os.path.isfile(fetch_filepath):
             logging.info("Preload file not found: " + fetch_filepath + " - downloading from: " + fetch_url)
-            download_file(fetch_url, fetch_filepath)
+            download_file(fetch_url, single_check['dir'], fetch_filepath)
 
             if not os.path.isfile(fetch_filepath):
                 raise Exception("Preload file download failed")
