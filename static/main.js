@@ -522,8 +522,8 @@ function show_property_search_modal() {
 }
 
 function build_rightmove_url() {
-    let rentBuyString = $('#rentOrBuyInput').val() === "Rent" ? "to-rent" : "for-sale";
-    let url = "https://www.rightmove.co.uk/property-" + rentBuyString + "/map.html?locationIdentifier=USERDEFINEDAREA";
+    let url = "https://www.rightmove.co.uk/property-" + $('#rentOrBuyInput').val() + "/map.html";
+    url += '?locationIdentifier=USERDEFINEDAREA';
 
     url += '^{"polylines":"' + encodeURIComponent(build_polyline_for_url()) + '"}';
 
