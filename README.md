@@ -8,7 +8,7 @@ If you've ever been looking for a property to rent or buy, but:
 
 Well, this tool is here to help solve that, with data! 😎
 
-Latest release hosted on Heroku here: <https://home-area-helper.herokuapp.com>
+Latest release hosted on Heroku here: <https://homearea.info>
 
 This should help you generate a meaningful search area which factors in your personal preferences for:
 
