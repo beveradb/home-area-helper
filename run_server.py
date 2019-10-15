@@ -16,7 +16,7 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logging.getLogger().setLevel(logging.INFO)
 
 # Download dataset files and pre-seeded API call / compute cache to reduce slug size
-preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.4/', [
+preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.5/', [
     {'dir': 'datasets/uk/', 'file': 'uk-wgs84-imd-shapefiles.zip'},
     {'dir': 'caches/', 'file': 'requests_cache.sqlite.zip'},
     {'dir': 'caches/', 'file': 'static_cache.sqlite.zip'},
