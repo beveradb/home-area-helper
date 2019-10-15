@@ -8,12 +8,12 @@ import shapely.ops
 from shapely.affinity import scale
 from shapely.geometry import Point, MultiPoint, Polygon, LineString, mapping, MultiPolygon
 
-from run_server import cache
+from run_server import transient_cache
 from src.utils import timeit
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def get_bounding_square_for_point(target_lng_lat, bounding_box_radius_miles):
     if bounding_box_radius_miles == 0:
         return None
@@ -23,7 +23,7 @@ def get_bounding_square_for_point(target_lng_lat, bounding_box_radius_miles):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def get_bounding_circle_for_point(target_lng_lat, bounding_box_radius_miles):
     if bounding_box_radius_miles == 0:
         return None
@@ -40,7 +40,7 @@ def get_bounding_circle_for_point(target_lng_lat, bounding_box_radius_miles):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def filter_uk_multipoly_by_target_radius(multi_polygon_to_filter, target_lng_lat, max_distance_limit_miles):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
     multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
@@ -59,7 +59,7 @@ def filter_uk_multipoly_by_target_radius(multi_polygon_to_filter, target_lng_lat
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def filter_multipoly_by_bounding_box(multi_polygon_to_filter, wgs84_bounding_polygon):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
     multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
@@ -73,7 +73,7 @@ def filter_multipoly_by_bounding_box(multi_polygon_to_filter, wgs84_bounding_pol
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def simplify_multi(multi_polygon_to_simplify, simplification_factor):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
     multi_polygon_to_simplify = convert_list_to_refined_multipoly(multi_polygon_to_simplify)
@@ -85,7 +85,7 @@ def simplify_multi(multi_polygon_to_simplify, simplification_factor):
         for key, single_polygon in enumerate(multi_polygon_to_simplify):
             multi_polygon_to_simplify[key] = simplify_polygon(single_polygon, simplification_factor)
         return multi_polygon_to_simplify
-    except TypeError as te:
+    except TypeError:
         # Unsure why we're still getting here occasionally despite if statement above, but meh
         pass
 
@@ -93,7 +93,7 @@ def simplify_multi(multi_polygon_to_simplify, simplification_factor):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def join_multi_to_single_poly(multi_polygon_to_join):
     # logging.debug("join_multi_to_single_poly called with " + str(type(multi_polygon_to_join)))
 
@@ -109,7 +109,7 @@ def join_multi_to_single_poly(multi_polygon_to_join):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def join_multi_with_connecting_lines(multi_polygon_to_join):
     # logging.debug("join_multi_with_connecting_lines called with " + str(type(multi_polygon_to_join)))
 
@@ -149,7 +149,7 @@ def join_multi_with_connecting_lines(multi_polygon_to_join):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def get_connecting_lines_for_multi(multi_polygon_to_join):
     # logging.debug("get_connecting_lines_for_multi called with " + str(type(multi_polygon_to_join)))
 
@@ -176,7 +176,7 @@ def get_connecting_lines_for_multi(multi_polygon_to_join):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def get_nearest_points_between_polygon_and_others(single_polygon, other_polygons):
     this_polygon_multipoint = MultiPoint(single_polygon.exterior.coords)
 
@@ -187,7 +187,7 @@ def get_nearest_points_between_polygon_and_others(single_polygon, other_polygons
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def get_nearest_polygon_from_list(single_polygon, other_polygons):
     other_centroids_multipoint = MultiPoint([o.centroid for o in other_polygons])
 
@@ -201,7 +201,7 @@ def get_nearest_polygon_from_list(single_polygon, other_polygons):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def get_multipoint_for_all_polygons_coords(polygons_list):
     coords_list = []
     if type(polygons_list) is Polygon:
@@ -214,7 +214,7 @@ def get_multipoint_for_all_polygons_coords(polygons_list):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def convert_list_to_refined_multipoly(multi_polygon_list):
     # logging.debug("convert_list_to_refined_multipoly called with " + str(type(multi_polygon_list)))
 
@@ -238,7 +238,7 @@ def convert_list_to_refined_multipoly(multi_polygon_list):
 
 
 @timeit
-# @cache.cached()
+# @transient_cache.cached()
 def filter_multipoly_by_polygon(multi_polygon_to_filter, filter_polygon):
     multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
 
@@ -265,7 +265,7 @@ def filter_multipoly_by_polygon(multi_polygon_to_filter, filter_polygon):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def filter_multipoly_by_min_area(multi_polygon_to_filter, min_area_miles):
     multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
 
@@ -294,7 +294,7 @@ def filter_multipoly_by_min_area(multi_polygon_to_filter, min_area_miles):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def instanciate_multipolygons(polygons_list):
     if type(polygons_list) is not list:
         raise Exception("instanciate_multipolygons expected a list, was given a " + str(type(polygons_list)))
@@ -316,7 +316,7 @@ def instanciate_multipolygons(polygons_list):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def refine_multipolygon(multipolygon, simplify_amount=0.0000001, buffer_amount=0.0000001):
     if type(multipolygon) is not MultiPolygon and type(multipolygon) is not Polygon:
         raise Exception("refine_multipolygon expected a MultiPolygon, was given a " + str(type(multipolygon)))
@@ -338,7 +338,7 @@ def refine_multipolygon(multipolygon, simplify_amount=0.0000001, buffer_amount=0
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def refine_polygons(polygons_list, simplify_amount=0.0000001, buffer_amount=0.0000001):
     if type(polygons_list) is MultiPolygon:
         logging.warning("refine_polygons was given a MultiPolygon - simply returning")

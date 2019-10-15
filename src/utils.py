@@ -2,16 +2,9 @@ import logging
 import os
 import sys
 import time
-
-import requests_cache
+import zipfile
 
 methods_timings_cumulative = {}
-
-cached_requests = requests_cache.core.CachedSession(
-    cache_name='api_cache',
-    backend="sqlite",
-    allowable_methods=('GET', 'POST')
-)
 
 
 def timeit(method):
@@ -29,6 +22,7 @@ def timeit(method):
 
         milliseconds = (te - ts) * 1000
 
+        # noinspection PyProtectedMember
         caller = sys._getframe().f_back.f_code.co_name
         name_with_caller = '%s -> %s' % (caller, method.__name__)
 
@@ -62,22 +56,25 @@ def log_method_timings():
 
 def download_file(url, local_filename):
     command = "curl -s -L -o " + local_filename + " " + url
-    logging.debug(command)
-    logging.debug(os.system(command))
+    logging.debug("Executing command: " + command)
+    logging.debug("Execution response: " + str(os.system(command)))
 
 
-def download_dataset_cache_files():
-    file = 'datasets/cache.sqlite'
-    if not os.path.isfile(file):
-        logging.info("Datasets disk cache database file not found, attempting download from github")
+def preload_files(url_root, files_to_check):
+    for single_check in files_to_check:
+        fetch_filepath = single_check['dir'] + single_check['file']
+        fetch_url = url_root + single_check['file']
 
-        download_file('https://github.com/beveradb/home-area-helper/releases/download/v0.4/cache.sqlite', file)
+        if not os.path.isfile(fetch_filepath):
+            logging.info("Preload file not found: " + fetch_filepath + " - downloading from: " + fetch_url)
+            download_file(fetch_url, fetch_filepath)
 
-        file = 'datasets/cache.sqlite-shm'
-        download_file('https://github.com/beveradb/home-area-helper/releases/download/v0.4/cache.sqlite-shm', file)
+            if not os.path.isfile(fetch_filepath):
+                raise Exception("Preload file download failed")
 
-        file = 'datasets/cache.sqlite-wal'
-        download_file('https://github.com/beveradb/home-area-helper/releases/download/v0.4/cache.sqlite-wal', file)
-
-    if not os.path.isfile('datasets/cache.sqlite'):
-        raise Exception("Datasets disk cache download failed")
+            if fetch_filepath.endswith('.zip'):
+                logging.info("Preload file ends with .zip, unzipping")
+                with zipfile.ZipFile(fetch_filepath, "r") as zip_ref:
+                    zip_ref.extractall(single_check['dir'])
+        else:
+            logging.info("Preload file already exists: " + fetch_filepath)

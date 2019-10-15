@@ -10,7 +10,7 @@ from src.utils import timeit
 
 
 @timeit
-# @cache.cached()
+@transient_cache.cached()
 def get_target_area_polygons(
         target_location_address: str,
         max_walking_time_mins: int,
@@ -124,7 +124,7 @@ def get_target_area_polygons(
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def fetch_single_transport_mode_poly(target_lng_lat, mode, max_time_mins, filter_polygon=None):
     if max_time_mins > 0:
         transport_poly = fetch_transport_mode_multipoly(target_lng_lat, mode, max_time_mins, filter_polygon)
@@ -140,6 +140,7 @@ def fetch_single_transport_mode_poly(target_lng_lat, mode, max_time_mins, filter
 
 
 @timeit
+@transient_cache.cached()
 def fetch_transport_mode_multipoly(target_lng_lat, mode, max_time_mins, filter_polygon=None):
     if max_time_mins > 0:
         transport_poly = travel_time.get_public_transport_isochrone_geometry(target_lng_lat, mode, max_time_mins)
@@ -159,6 +160,7 @@ def fetch_transport_mode_multipoly(target_lng_lat, mode, max_time_mins, filter_p
 
 
 @timeit
+@transient_cache.cached()
 def get_target_areas_polygons_json(targets_params: list):
     response_object = {
         'targets_results': [],
@@ -209,7 +211,7 @@ def get_target_areas_polygons_json(targets_params: list):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def plot_target_area_polygons_mpl(intersection_results):
     for key, value in intersection_results.items():
         if 'polygon' in value:

@@ -4,6 +4,4 @@ __pycache__
 *.pyc
 *.swp
 .idea
-api_cache.sqlite
-compute_cache.*
-datasets/cache.*
+caches/*

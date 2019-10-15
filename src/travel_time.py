@@ -5,15 +5,15 @@ import os
 from backoff import on_exception, expo
 from ratelimit import RateLimitException, limits
 
-from run_server import cache
-from src.utils import timeit, cached_requests
+from run_server import requests_cache, transient_cache
+from src.utils import timeit
 
 
 @timeit
 @on_exception(expo, RateLimitException, max_tries=10)  # Backoff exponentially and retry if rate limit hit
 @limits(calls=8, period=60)  # TravelTime only allows 10 requests per minute, and sends nag emails when near this...
 def call_traveltime_api(url, body, headers):
-    response = cached_requests.post(
+    response = requests_cache.post(
         url,
         json=body,
         headers=headers,
@@ -29,7 +29,7 @@ def call_traveltime_api(url, body, headers):
 
 
 @timeit
-@cache.cached()
+@transient_cache.cached()
 def get_public_transport_isochrone_geometry(target_lng_lat, mode, max_travel_time_mins):
     traveltime_api_url = 'http://api.traveltimeapp.com/v4/time-map'
     public_transport_isochrone_request_headers = {

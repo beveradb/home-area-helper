@@ -10,14 +10,15 @@ from mapbox import Geocoder
 from ratelimit import RateLimitException, limits
 from shapely.geometry import Polygon
 
-from src.utils import timeit, cached_requests
+from run_server import requests_cache
+from src.utils import timeit
 
 
 @timeit
 @on_exception(expo, RateLimitException, max_tries=10)  # Backoff exponentially and retry if rate limit hit
 @limits(calls=300, period=60)  # Mapbox allow 300 (!) requests per minute
 def call_mapbox_api(url):
-    response = cached_requests.get(url)
+    response = requests_cache.get(url)
 
     if response.from_cache:
         logging.log(logging.DEBUG,
