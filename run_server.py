@@ -12,10 +12,11 @@ from src.utils import preload_files
 
 app = Flask(__name__)
 sslify = SSLify(app)
+app_debug = "HOMEAREA_DEBUG" in os.environ
 
 # Set up debug logging to console
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.DEBUG if app_debug else logging.INFO)
 
 # Download dataset files and pre-seeded API call / compute cache to reduce slug size
 preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.5/', [
@@ -65,4 +66,4 @@ def target_area_json():
 
 if __name__ == '__main__':
     port = os.environ['PORT'] if 'PORT' in os.environ else 9876
-    app.run(debug=True, host='0.0.0.0', port=port, use_evalex=False)
+    app.run(debug=app_debug, host='0.0.0.0', port=port, use_evalex=False)
