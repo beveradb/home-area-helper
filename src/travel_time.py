@@ -20,10 +20,9 @@ def call_traveltime_api(url, body, headers):
     )
 
     if response.from_cache:
-        logging.log(logging.DEBUG,
-                    'Cache HIT - this response was fetched from the local SQLite DB without a new API call')
+        logging.debug('Cache HIT - this response was fetched from the local SQLite DB without a new API call')
     else:
-        logging.debug('Cache MISS - this response required a new API call')
+        logging.warning('Cache MISS - this response required a new API call')
 
     return response
 

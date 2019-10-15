@@ -13,14 +13,13 @@ app = Flask(__name__)
 
 # Set up debug logging to console
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 # Download dataset files and pre-seeded API call / compute cache to reduce slug size
-release_download_url = 'https://github.com/beveradb/home-area-helper/releases/download/untagged-08532657ba6464902651/'
-preload_files(release_download_url, [
+preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.4/', [
     {'dir': 'datasets/uk/', 'file': 'uk-wgs84-imd-shapefiles.zip'},
     {'dir': 'caches/', 'file': 'requests_cache.sqlite.zip'},
-    # {'dir': 'caches/', 'file': 'static_cache.sqlite.zip'},
+    {'dir': 'caches/', 'file': 'static_cache.sqlite.zip'},
 ])
 
 # Set up disk caching for HTTP requests (e.g. API calls), pre-seeded from above download file
