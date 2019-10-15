@@ -5,11 +5,13 @@ import os
 import requests_cache
 import ucache
 from flask import Flask, render_template, Response, request
+from flask_sslify import SSLify
 
 from src import target_area, utils
 from src.utils import preload_files
 
 app = Flask(__name__)
+sslify = SSLify(app)
 
 # Set up debug logging to console
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
