@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 # Set up debug logging to console
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
 
 # Download dataset files and pre-seeded API call / compute cache to reduce slug size
 preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.5/', [
