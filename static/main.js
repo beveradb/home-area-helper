@@ -669,7 +669,7 @@ function plot_results(api_call_data) {
                     key + "-" + target_index,
                     target_prefix + single_result['label'],
                     single_result['polygon'],
-                    layer_colours[current_colour], 0.3, false
+                    layer_colours[current_colour], 0.5, false
                 );
 
                 current_colour++;

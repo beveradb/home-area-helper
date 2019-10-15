@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
 import itertools
-from functools import partial
+import logging
 
 import fiona
-import pyproj
-from shapely.geometry import MultiPolygon, shape
+from shapely.geometry import MultiPolygon, shape, Polygon
 from shapely.ops import transform
 
-from run_server import cache, datacache
-from src import multi_polygons
+from run_server import datacache
+from src.multi_polygons import filter_multipoly_by_bounding_box
 from src.utils import timeit
 
+
+# This file assumes all input shapefiles are already in WGS84 projection.
+# If we wish to use a new source dataset, to avoid needing to do any reprojection in this code, it is much more
+# efficient to reproject the source dataset first. For example, to reproject a UK shapefile to WGS84, run:
+# ogr2ogr -f "ESRI Shapefile" output-wgs84.shp input-ukproj.shp -s_srs EPSG:27700 -t_srs EPSG:4326
 
 @timeit
 @datacache.cached()
 def get_polygon_for_least_deprived_zones_england(minimum_deprivation_rank):
     # Metadata as per https://www.arcgis.com/home/item.html?id=5e1c399d787e48c0902e5fe4fc1ccfe3
     filtered_zones_polygons = []
-    with fiona.open('datasets/IMD_2019/IMD_2019.shp') as allZones:
+    with fiona.open('datasets/uk/IMD_2019/IMD_2019_WGS.shp') as allZones:
         # logging.debug("Total IMD data zones: " + str(len(allZones)))
 
         for singleZone in allZones:
@@ -31,7 +35,7 @@ def get_polygon_for_least_deprived_zones_england(minimum_deprivation_rank):
 @datacache.cached()
 def get_polygon_for_least_deprived_zones_scotland(minimum_deprivation_rank):
     filtered_zones_polygons = []
-    with fiona.open('datasets/SG_SIMD_2016/SG_SIMD_2016.shp') as allZones:
+    with fiona.open('datasets/uk/SG_SIMD_2016/SG_SIMD_2016_WGS.shp') as allZones:
         # logging.debug("Total SIMD data zones: " + str(len(allZones)))
 
         for singleZone in allZones:
@@ -52,18 +56,49 @@ def get_polygon_for_least_deprived_zones_uk(minimum_deprivation_rank):
 
 
 @timeit
-@cache.cached()
-def get_simplified_clipped_uk_deprivation_polygon(min_deprivation_score, bounding_poly):
-    imd_filter_multi_polygon = get_polygon_for_least_deprived_zones_uk(min_deprivation_score)
-    # logging.debug("imdFilterMultiPolygons after deprivation filter: " + str(len(imdFilterMultiPolygon)))
+@datacache.cached()
+def reproject_multipolygon(multipoly, proj_partial):
+    # proj_uk_to_wgs84 = partial(pyproj.transform, pyproj.Proj(init='epsg:27700'), pyproj.Proj(init='epsg:4326'))
 
-    imd_filter_multi_polygon = multi_polygons.filter_uk_multipoly_by_bounding_box(imd_filter_multi_polygon,
-                                                                                  bounding_poly)
-    # logging.debug("imdFilterMultiPolygons after bounds filter: " + str(len(imdFilterMultiPolygon)))
+    reproj_polygons_list = []
+    total_polygons = len(multipoly.geoms)
 
-    imd_filter_multi_polygon = multi_polygons.simplify_multi(imd_filter_multi_polygon, 0.001)
-    imd_filter_combined_polygon = multi_polygons.join_multi_to_single_poly(imd_filter_multi_polygon)
+    for single_polygon in multipoly:
+        logging.debug("Reprojecting polygon " + str(len(reproj_polygons_list)) + " out of " + str(total_polygons))
+        reproj_polygons_list.append(reproject_single_polygon(single_polygon, proj_partial))
 
-    u_kto_w_g_s84_project = partial(pyproj.transform, pyproj.Proj(init='epsg:27700'), pyproj.Proj(init='epsg:4326'))
+    return MultiPolygon(reproj_polygons_list)
 
-    return transform(u_kto_w_g_s84_project, imd_filter_combined_polygon)
+
+@timeit
+@datacache.cached()
+def reproject_single_polygon(single_polygon, proj_partial):
+    return transform(proj_partial, single_polygon)
+
+
+@timeit
+@datacache.cached()
+def get_world_min_deprivation_rank_wgs84_multipoly(minimum_deprivation_rank):
+    uk_multipoly_wgs84 = get_polygon_for_least_deprived_zones_uk(minimum_deprivation_rank)
+
+    return uk_multipoly_wgs84
+
+
+@timeit
+@datacache.cached()
+def get_bounded_min_rank_multipoly(input_bounds, min_deprivation_rank):
+    min_rank_poly = get_world_min_deprivation_rank_wgs84_multipoly(min_deprivation_rank)
+
+    input_multipoly_bounds = Polygon.from_bounds(*input_bounds).buffer(0.001)
+
+    return filter_multipoly_by_bounding_box(min_rank_poly,
+                                            input_multipoly_bounds)
+
+
+@timeit
+def intersect_multipoly_by_min_rank(input_multipoly, min_deprivation_rank):
+    min_rank_poly = get_bounded_min_rank_multipoly(input_multipoly.bounds, min_deprivation_rank)
+
+    input_multipoly = min_rank_poly.intersection(input_multipoly)
+
+    return input_multipoly

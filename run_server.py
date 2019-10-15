@@ -18,7 +18,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 cache = ucache.SqliteCache(filename='compute_cache.sqlite', cache_size=5000, timeout=32000000, compression=True)
 
 # Download pre-seeded dataset cache file to reduce computations
-download_dataset_cache_files()
+# download_dataset_cache_files()
 datacache = ucache.SqliteCache(filename='datasets/cache.sqlite', cache_size=5000, timeout=32000000, compression=True)
 
 

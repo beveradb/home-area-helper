@@ -51,28 +51,25 @@ def filter_uk_multipoly_by_target_radius(multi_polygon_to_filter, target_lng_lat
     target_bounding_circle_uk_project = reproject_polygon(wgs84_to_uk_project, target_bounding_circle)
 
     filtered_multipolygon = []
-    for singlePolygon in multi_polygon_to_filter:
-        if target_bounding_circle_uk_project.contains(singlePolygon.centroid):
-            filtered_multipolygon.append(singlePolygon)
+    for single_polygon in multi_polygon_to_filter:
+        if target_bounding_circle_uk_project.contains(single_polygon.centroid):
+            filtered_multipolygon.append(single_polygon)
 
     return filtered_multipolygon
 
 
 @timeit
 @cache.cached()
-def filter_uk_multipoly_by_bounding_box(multi_polygon_to_filter, wgs84_bounding_polygon):
+def filter_multipoly_by_bounding_box(multi_polygon_to_filter, wgs84_bounding_polygon):
     # For convenience, allow passing in a List of Polygons, or even a List of coordinate lists; convert to MultiPolygon
     multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
 
-    wgs84_to_uk_project = partial(pyproj.transform, pyproj.Proj(init='epsg:4326'), pyproj.Proj(init='epsg:27700'))
-    uk_bounds_polygon = reproject_polygon(wgs84_to_uk_project, wgs84_bounding_polygon)
-
     filtered_multipolygon = []
-    for singlePolygon in multi_polygon_to_filter:
-        if uk_bounds_polygon.contains(singlePolygon.centroid):
-            filtered_multipolygon.append(singlePolygon)
+    for single_polygon in multi_polygon_to_filter:
+        if wgs84_bounding_polygon.contains(single_polygon.centroid):
+            filtered_multipolygon.append(single_polygon)
 
-    return filtered_multipolygon
+    return convert_list_to_refined_multipoly(filtered_multipolygon)
 
 
 @timeit
@@ -85,8 +82,8 @@ def simplify_multi(multi_polygon_to_simplify, simplification_factor):
         return multi_polygon_to_simplify.simplify(simplification_factor)
 
     try:
-        for key, singlePolygon in enumerate(multi_polygon_to_simplify):
-            multi_polygon_to_simplify[key] = simplify_polygon(singlePolygon, simplification_factor)
+        for key, single_polygon in enumerate(multi_polygon_to_simplify):
+            multi_polygon_to_simplify[key] = simplify_polygon(single_polygon, simplification_factor)
         return multi_polygon_to_simplify
     except TypeError as te:
         # Unsure why we're still getting here occasionally despite if statement above, but meh
@@ -218,7 +215,7 @@ def get_multipoint_for_all_polygons_coords(polygons_list):
 
 @timeit
 @cache.cached()
-def convert_list_to_refined_multipoly(multi_polygon_list, simplify_amount=0.0000001, buffer_amount=0.0000001):
+def convert_list_to_refined_multipoly(multi_polygon_list):
     # logging.debug("convert_list_to_refined_multipoly called with " + str(type(multi_polygon_list)))
 
     # If the object passed in isn't a list, assume it's already a MultiPolygon and do nothing, for easier recursion
@@ -232,13 +229,7 @@ def convert_list_to_refined_multipoly(multi_polygon_list, simplify_amount=0.0000
             logging.info("Squashed list of multis after instanciate_multipolygon into single list. New length: " +
                          str(len(multi_polygon_list)))
 
-        if simplify_amount == 0:
-            simplify_amount = 0.0000001
-
-        if buffer_amount == 0:
-            buffer_amount = 0.0000001
-
-        refined_polygons_list = refine_polygons(multi_polygon_list, simplify_amount, buffer_amount)
+        refined_polygons_list = refine_polygons(multi_polygon_list)
 
         # Once we have a buffered list of Polygons, combine into a single Polygon or MultiPolygon if there are gaps
         multi_polygon_list = union_polygons(refined_polygons_list)
@@ -247,7 +238,7 @@ def convert_list_to_refined_multipoly(multi_polygon_list, simplify_amount=0.0000
 
 
 @timeit
-@cache.cached()
+# @cache.cached()
 def filter_multipoly_by_polygon(multi_polygon_to_filter, filter_polygon):
     multi_polygon_to_filter = convert_list_to_refined_multipoly(multi_polygon_to_filter)
 
@@ -256,6 +247,8 @@ def filter_multipoly_by_polygon(multi_polygon_to_filter, filter_polygon):
 
         filtered_polygons_list = []
         for single_polygon in multi_polygon_to_filter:
+            logging.debug(
+                "Calling contains on filter_polygon, filtered list length: " + str(len(filtered_polygons_list)))
             if filter_polygon.contains(single_polygon.representative_point()):
                 filtered_polygons_list.append(single_polygon)
 
@@ -320,6 +313,28 @@ def instanciate_multipolygons(polygons_list):
             polygons_list[key] = instanciate_polygon(single_polygon)
 
     return polygons_list
+
+
+@timeit
+@cache.cached()
+def refine_multipolygon(multipolygon, simplify_amount=0.0000001, buffer_amount=0.0000001):
+    if type(multipolygon) is not MultiPolygon and type(multipolygon) is not Polygon:
+        raise Exception("refine_multipolygon expected a MultiPolygon, was given a " + str(type(multipolygon)))
+
+    # For each polygon in the multipolygon, buffer to remove self-intersections and simplify
+
+    if type(multipolygon) is Polygon:
+        multipolygon = [multipolygon]
+
+    refined_polygons_list = []
+    for single_polygon in multipolygon:
+        single_polygon = simplify_polygon(single_polygon, simplify_amount)
+        single_polygon = buffer_polygon(single_polygon, buffer_amount)
+        refined_polygons_list.append(simplify_polygon(single_polygon, simplify_amount))
+
+    multipolygon = union_polygons(refined_polygons_list)
+
+    return multipolygon
 
 
 @timeit

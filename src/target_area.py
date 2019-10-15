@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-import json
-import logging
 
 import matplotlib.pyplot as plt
-from shapely.geometry import Polygon, mapping
 
-from run_server import cache
-from src import imd_tools
 from src import mapbox
-from src import multi_polygons
 from src import travel_time
+from src.imd_tools import *
+from src.multi_polygons import *
 from src.utils import timeit
 
 
@@ -40,7 +36,7 @@ def get_target_area_polygons(
     }
 
     result_polygons = []
-    max_radius_polygon = multi_polygons.get_bounding_circle_for_point(target_lng_lat, max_radius_miles)
+    max_radius_polygon = get_bounding_circle_for_point(target_lng_lat, max_radius_miles)
     result_intersection = max_radius_polygon
 
     if max_radius_polygon is not None:
@@ -64,7 +60,7 @@ def get_target_area_polygons(
 
         if transport_poly is not None:
             result_polygons.append(transport_poly)
-            transport_poly = multi_polygons.join_multi_to_single_poly(transport_poly)
+            transport_poly = join_multi_to_single_poly(transport_poly)
 
             return_object[transport['mode']] = {
                 'label': transport['label'] % str(transport['max_time']),
@@ -74,13 +70,13 @@ def get_target_area_polygons(
     logging.info("Total result_polygons with all transports: " + str(len(result_polygons)))
 
     if min_area_miles > 0:
-        result_polygons = multi_polygons.filter_multipoly_by_min_area(result_polygons, min_area_miles)
+        result_polygons = filter_multipoly_by_min_area(result_polygons, min_area_miles)
 
     result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
-    logging.info("Total result_polygons after min area filter: " + str(result_polygons_length))
+    logging.info("Total result_polygons after transport min area filter: " + str(result_polygons_length))
 
     if result_polygons_length > 0:
-        # combined_transport_poly = multi_polygons.join_multi_to_single_poly(result_polygons)
+        # combined_transport_poly = join_multi_to_single_poly(result_polygons)
         #
         # if type(combined_transport_poly) is not list and combined_transport_poly.bounds:
         #     # Buffer to remove any self-intersections
@@ -92,16 +88,32 @@ def get_target_area_polygons(
         #     }
 
         if min_deprivation_rank > 0:
-            result_polygons = imd_tools.filter_intersect_multipoly_by_min_rank(result_polygons, min_deprivation_rank)
+            imd_multipoly = get_bounded_min_rank_multipoly(result_polygons.bounds, min_deprivation_rank)
+            imd_multipoly_joined = join_multi_to_single_poly(imd_multipoly)
+            return_object['deprivation'] = {
+                'label': 'Deprivation Rank >= ' + str(min_deprivation_rank),
+                'polygon': imd_multipoly_joined
+            }
+
+            result_polygons = intersect_multipoly_by_min_rank(result_polygons, min_deprivation_rank)
 
             result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
             logging.info("Total result_polygons after min_deprivation_rank filter: " + str(result_polygons_length))
 
-        result_polygons = multi_polygons.convert_list_to_refined_multipoly(result_polygons,
-                                                                           simplify_factor,
-                                                                           buffer_factor)
+        if result_polygons_length > 0:
+            if min_area_miles > 0:
+                result_polygons = filter_multipoly_by_min_area(result_polygons, min_area_miles)
 
-        result_intersection = multi_polygons.join_multi_to_single_poly(result_polygons)
+            result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
+            logging.info(
+                "Total result_polygons after post-intersection min area filter: " + str(result_polygons_length))
+
+        if result_polygons_length > 0:
+            result_polygons = refine_multipolygon(result_polygons,
+                                                  simplify_factor,
+                                                  buffer_factor)
+
+            result_intersection = join_multi_to_single_poly(result_polygons)
 
     return_object['result_intersection'] = {
         'label': 'Intersection',
@@ -118,7 +130,7 @@ def fetch_single_transport_mode_poly(target_lng_lat, mode, max_time_mins, filter
         transport_poly = fetch_transport_mode_multipoly(target_lng_lat, mode, max_time_mins, filter_polygon)
 
         if hasattr(transport_poly, '__len__') and len(transport_poly) > 0:
-            transport_poly = multi_polygons.join_multi_to_single_poly(transport_poly)
+            transport_poly = join_multi_to_single_poly(transport_poly)
             return transport_poly
 
         if type(transport_poly) is Polygon:
@@ -139,7 +151,7 @@ def fetch_transport_mode_multipoly(target_lng_lat, mode, max_time_mins, filter_p
         logging.debug("Total polygons in " + mode + " multipolygon: " + str(poly_len))
 
         if filter_polygon is not None:
-            transport_poly = multi_polygons.filter_multipoly_by_polygon(transport_poly, filter_polygon)
+            transport_poly = filter_multipoly_by_polygon(transport_poly, filter_polygon)
 
         return transport_poly
 
@@ -184,10 +196,10 @@ def get_target_areas_polygons_json(targets_params: list):
     if intersections_to_combine:
         logging.debug(intersections_to_combine)
         # Add result_intersection to response object, with bounds and centroid
-        joined_intersections = multi_polygons.join_multi_to_single_poly(intersections_to_combine)
+        joined_intersections = join_multi_to_single_poly(intersections_to_combine)
 
         response_object['result_intersection'] = {
-            'label': 'Combined Result',
+            'label': 'All Targets Combined',
             'bounds': joined_intersections.bounds,
             'centroid': mapping(joined_intersections.centroid)['coordinates'],
             'polygon': mapping(joined_intersections)
