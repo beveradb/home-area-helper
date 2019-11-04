@@ -36,6 +36,8 @@ def get_public_transport_isochrone_geometry(target_lng_lat, mode, max_travel_tim
         "X-Application-Id": os.environ['TRAVELTIME_APP_ID'],
         "X-Api-Key": os.environ['TRAVELTIME_API_KEY'],
     }
+    
+    departure_time = strftime("%Y-%m-%d") + "T08:00:00+0000"
 
     public_transport_isochrone_request_body = {
         "departure_searches": [
@@ -43,7 +45,7 @@ def get_public_transport_isochrone_geometry(target_lng_lat, mode, max_travel_tim
                 "id": str(target_lng_lat) + "-" + mode + "-" + str(max_travel_time_mins),
                 "coords": {"lng": target_lng_lat[0], "lat": target_lng_lat[1]},
                 "transportation": {"type": mode},
-                "departure_time": "2019-09-30T08:00:00+0000",
+                "departure_time": departure_time,
                 "travel_time": int(max_travel_time_mins) * int(60)
             }
         ],
