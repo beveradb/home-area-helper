@@ -12,7 +12,7 @@ function map_loaded(map) {
 
 $(function () {
     $("#addTargetButton").click(function (e) {
-        add_new_target_to_accordion();
+        add_new_target_to_accordion(true);
         return false;
     });
 
@@ -306,7 +306,7 @@ function load_saved_search(search_object) {
     $('#targetsAccordion .targetCard').remove();
 
     search_targets_array.forEach(function (target_search, target_index) {
-        let new_target_card = add_new_target_to_accordion();
+        let new_target_card = add_new_target_to_accordion(false);
 
         new_target_card.find(".targetAddressInput").val(target_search['target']).focus();
         if (target_search['walking']) new_target_card.find(".maxWalkingTimeInput").val(target_search['walking']);
@@ -377,7 +377,7 @@ function validate_and_submit_request() {
     );
 }
 
-function add_new_target_to_accordion() {
+function add_new_target_to_accordion(showTargetCard) {
     let targetsAccordion = $('#targetsAccordion');
     let newTargetCard = $('#targetCardTemplate').clone();
 
@@ -397,7 +397,7 @@ function add_new_target_to_accordion() {
 
     let newCollapseBody = newTargetCard.find('div.collapse');
     newCollapseBody.attr('id', "targetCollapse" + newTargetKey);
-    newCollapseBody.addClass('show');
+    if (showTargetCard) newCollapseBody.addClass('show');
 
     newTargetCard.find('input').keypress(function (e) {
         if (e.which === 13) {
@@ -420,6 +420,8 @@ function add_new_target_to_accordion() {
     newTargetCard.find('.card-header button.close').click(function () {
         newTargetCard.remove();
     });
+
+    newTargetCard.find('.adjustShapeToggleButton').click();
 
     return newTargetCard;
 }

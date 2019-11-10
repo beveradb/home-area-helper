@@ -62,7 +62,7 @@
                                                    placeholder="" required>
                                             <small class="form-text text-muted">
                                                 Destination address for travel time
-                                                calculations - e.g. workplace, city center, family home</small>
+                                                calculations - e.g. workplace, city center, loved one</small>
                                         </div>
                                     </div>
                                     <div class="form-row">
@@ -107,43 +107,6 @@
                                         </div>
                                     </div>
                                     <div class="form-row">
-                                        <div class="form-group col-12 col-xl-6">
-                                            <label for="maxRadiusInput">Max. Radius <small>(mi)</small></label>
-                                            <input type="number" class="form-control maxRadiusInput"
-                                                   placeholder="" step="0.01">
-                                            <small id="maxRadiusHelp" class="form-text text-muted">
-                                                Limit resulting shape to max radius. May help filter out outliers.
-                                            </small>
-                                        </div>
-                                        <div class="form-group col-12 col-xl-6">
-                                            <label for="minAreaRadiusInput">Min. Area <small>(deg)</small></label>
-                                            <input type="number" class="form-control minAreaRadiusInput"
-                                                   placeholder="" step="0.0000001" value="0.00001">
-                                            <small id="minAreaRadiusInputHelp" class="form-text text-muted">
-                                                Exclude small, separated areas. May help filter out outliers.
-                                            </small>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group col-12 col-xl-6">
-                                            <label for="simplifyFactorInput">Simplify <small>(deg)</small></label>
-                                            <input type="number" class="form-control simplifyFactorInput"
-                                                   placeholder="" max="0.1" step="0.00000001" value="0.0001">
-                                            <small id="simplifyFactorInputHelp" class="form-text text-muted">
-                                                Simplify resulting shape (e.g. 0.01). May help shorten long property
-                                                URL.
-                                            </small>
-                                        </div>
-                                        <div class="form-group col-12 col-xl-6">
-                                            <label for="bufferFactorInput">Buffer <small>(deg)</small></label>
-                                            <input type="number" class="form-control bufferFactorInput"
-                                                   placeholder="" max="0.1" step="0.00000001" value="0.0001">
-                                            <small id="bufferFactorInputHelp" class="form-text text-muted">
-                                                Buffer resulting shape (e.g. 0.01). May help shorten long property URL.
-                                            </small>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
                                         <div class="form-group col-12">
                                             <label for="minIMDInput">Min. Deprivation Rank <small>(1-10)</small></label>
                                             <input type="number" class="form-control minIMDInput"
@@ -153,6 +116,52 @@
                                                 Leave blank to allow all areas, 5 to allow only the top 50% least
                                                 deprived areas.
                                             </small>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-outline-secondary btn-block adjustShapeToggleButton text-left"
+                                            type="button"
+                                            data-toggle="collapse"
+                                            data-target=".adjustShapeSection"
+                                            aria-expanded="false" aria-controls="adjustShapeSection">
+                                        Adjust Shape
+                                    </button>
+                                    <div class="adjustShapeSection collapse mt-3">
+                                        <div class="form-row">
+                                            <div class="form-group col-12 col-xl-6">
+                                                <label for="maxRadiusInput">Max. Radius <small>(mi)</small></label>
+                                                <input type="number" class="form-control maxRadiusInput"
+                                                       placeholder="" step="0.01">
+                                                <small id="maxRadiusHelp" class="form-text text-muted">
+                                                    Limit resulting shape to max radius. May help filter out outliers.
+                                                </small>
+                                            </div>
+                                            <div class="form-group col-12 col-xl-6">
+                                                <label for="minAreaRadiusInput">Min. Area <small>(deg)</small></label>
+                                                <input type="number" class="form-control minAreaRadiusInput"
+                                                       placeholder="" step="0.0000001" value="0.00001">
+                                                <small id="minAreaRadiusInputHelp" class="form-text text-muted">
+                                                    Exclude small, separated areas. May help filter out outliers.
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group col-12 col-xl-6">
+                                                <label for="simplifyFactorInput">Simplify <small>(deg)</small></label>
+                                                <input type="number" class="form-control simplifyFactorInput"
+                                                       placeholder="" max="0.1" step="0.00000001" value="0.0001">
+                                                <small id="simplifyFactorInputHelp" class="form-text text-muted">
+                                                    Simplify resulting shape (e.g. 0.01). May help shorten long property
+                                                    URL.
+                                                </small>
+                                            </div>
+                                            <div class="form-group col-12 col-xl-6">
+                                                <label for="bufferFactorInput">Buffer <small>(deg)</small></label>
+                                                <input type="number" class="form-control bufferFactorInput"
+                                                       placeholder="" max="0.1" step="0.00000001" value="0.0001">
+                                                <small id="bufferFactorInputHelp" class="form-text text-muted">
+                                                    Buffer resulting shape (e.g. 0.01). May help shorten long property URL.
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
