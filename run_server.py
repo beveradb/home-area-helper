@@ -22,7 +22,7 @@ logging.getLogger().setLevel(logging.DEBUG if app_debug else logging.INFO)
 preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.6/', [
     {'dir': 'datasets/uk/', 'file': 'uk-wgs84-imd-shapefiles.zip'},
     {'dir': 'caches/', 'file': 'requests_cache.sqlite.zip'},
-    {'dir': 'caches/', 'file': 'static_cache.sqlite.7z'},
+    {'dir': 'caches/', 'file': 'static_cache.sqlite'},
 ])
 
 # Set up disk caching for HTTP requests (e.g. API calls), pre-seeded from above download file
