@@ -18,3 +18,5 @@ flask
 requests-cache
 backoff
 flask_sslify
+pyunpack
+patool
