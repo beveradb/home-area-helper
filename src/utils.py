@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 import time
-import zipfile
+from pyunpack import Archive
 
 methods_timings_cumulative = {}
 
@@ -76,9 +76,9 @@ def preload_files(url_root, files_to_check):
             if not os.path.isfile(fetch_filepath):
                 raise Exception("Preload file download failed")
 
-            if fetch_filepath.endswith('.zip'):
-                logging.info("Preload file ends with .zip, unzipping")
-                with zipfile.ZipFile(fetch_filepath, "r") as zip_ref:
-                    zip_ref.extractall(single_check['dir'])
+            if fetch_filepath.endswith('.zip') or fetch_filepath.endswith('.7z'):
+                logging.info("Preload file ends with .zip or .7z, extracting")
+                Archive(fetch_filepath).extractall(single_check['dir'])
+
         else:
             logging.info("Preload file already exists: " + fetch_filepath)
