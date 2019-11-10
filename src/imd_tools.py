@@ -134,6 +134,9 @@ def get_bounded_min_rank_multipoly(input_bounds, rank_type, min_rank_value):
 def intersect_multipoly_by_min_rank(input_multipoly, rank_type, min_rank_value):
     min_rank_poly = get_bounded_min_rank_multipoly(input_multipoly.bounds, rank_type, min_rank_value)
 
-    input_multipoly = min_rank_poly.intersection(input_multipoly)
+    if isinstance(min_rank_poly, list):
+        logging.warning("min_rank_poly is list, not attempting to intersect it as presumably this is empty?")
+    else:
+        input_multipoly = min_rank_poly.intersection(input_multipoly)
 
     return input_multipoly
