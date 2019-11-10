@@ -422,6 +422,7 @@ function add_new_target_to_accordion(showTargetCard) {
     });
 
     newTargetCard.find('.adjustShapeToggleButton').click();
+    newTargetCard.find('.specificDeprivationsToggleButton').click();
 
     return newTargetCard;
 }

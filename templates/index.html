@@ -108,7 +108,7 @@
                                     </div>
                                     <div class="form-row">
                                         <div class="form-group col-12">
-                                            <label for="minIMDInput">Min. Deprivation Rank <small>(1-10)</small></label>
+                                            <label for="minIMDInput">Minimum Combined Deprivation Rank <small>(1-10)</small></label>
                                             <input type="number" class="form-control minIMDInput"
                                                    aria-describedby="minIMDHelp"
                                                    placeholder="" min="1" max="50">
@@ -118,12 +118,65 @@
                                             </small>
                                         </div>
                                     </div>
-                                    <button class="btn btn-outline-secondary btn-block adjustShapeToggleButton text-left"
+                                    <button class="btn btn-outline-secondary btn-block specificDeprivationsToggleButton text-left"
+                                            type="button"
+                                            data-toggle="collapse"
+                                            data-target=".specificDeprivationsSection"
+                                            aria-expanded="false" aria-controls="specificDeprivationsSection">
+                                        + Specific Deprivation Indexes
+                                    </button>
+                                    <div class="specificDeprivationsSection collapse mt-3">
+                                        <div class="form-row">
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="incomeRankInput">Income</label>
+                                                <input type="number" class="form-control incomeRankInput"
+                                                       placeholder="" max="240">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="crimeRankInput">Crime</label>
+                                                <input type="number" class="form-control crimeRankInput"
+                                                       placeholder="" max="240">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="healthRankInput">Health</label>
+                                                <input type="number" class="form-control healthRankInput"
+                                                       placeholder="" max="240">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="educationRankInput">Education</label>
+                                                <input type="number" class="form-control educationRankInput"
+                                                       placeholder="" max="240">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="servicesRankInput">Access to services</label>
+                                                <input type="number" class="form-control servicesRankInput"
+                                                       placeholder="" max="240">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="environmentRankInput">Living Environment</label>
+                                                <input type="number" class="form-control environmentRankInput"
+                                                       placeholder="" max="240">
+                                            </div>
+
+                                            <div class="form-group col-12">
+                                                <small id="specificDeprivationsHelp" class="form-text text-muted">
+                                                    These are the specific statistics which combine to make the combined Multiple Deprivations rank, above.<br/>
+                                                    These may be of interest if you wish to target an area specifically based on one particular statistic.<br/>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-outline-secondary btn-block adjustShapeToggleButton text-left mt-3"
                                             type="button"
                                             data-toggle="collapse"
                                             data-target=".adjustShapeSection"
                                             aria-expanded="false" aria-controls="adjustShapeSection">
-                                        Adjust Shape
+                                        + Adjust / Simplify Shape
                                     </button>
                                     <div class="adjustShapeSection collapse mt-3">
                                         <div class="form-row">
