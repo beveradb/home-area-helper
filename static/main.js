@@ -80,6 +80,12 @@ function show_saved_searches_modal() {
         train: "Train",
         driving: "Drive",
         deprivation: "Deprivation",
+        income: "Income",
+        crime: "Crime",
+        health: "Health",
+        education: "Education",
+        services: "Access to services",
+        environment: "Living Environment",
         radius: "Max. Radius",
         minarea: "Min. Area",
         simplify: "Simplify",
@@ -316,6 +322,12 @@ function load_saved_search(search_object) {
         if (target_search['train']) new_target_card.find(".maxTrainTimeInput").val(target_search['train']);
         if (target_search['driving']) new_target_card.find(".maxDrivingTimeInput").val(target_search['driving']);
         if (target_search['deprivation']) new_target_card.find(".minIMDInput").val(target_search['deprivation']);
+        if (target_search['income']) new_target_card.find(".incomeRankInput").val(target_search['income']);
+        if (target_search['crime']) new_target_card.find(".crimeRankInput").val(target_search['crime']);
+        if (target_search['health']) new_target_card.find(".healthRankInput").val(target_search['health']);
+        if (target_search['education']) new_target_card.find(".educationRankInput").val(target_search['education']);
+        if (target_search['services']) new_target_card.find(".servicesRankInput").val(target_search['services']);
+        if (target_search['environment']) new_target_card.find(".environmentRankInput").val(target_search['environment']);
         if (target_search['radius'] > 0) new_target_card.find(".maxRadiusInput").val(target_search['radius']);
         if (target_search['minarea'] > 0) new_target_card.find(".minAreaRadiusInput").val(target_search['minarea']);
         if (target_search['simplify'] > 0) new_target_card.find(".simplifyFactorInput").val(target_search['simplify']);
@@ -463,6 +475,12 @@ function build_targets_array() {
             train: single_card.find(".maxTrainTimeInput").val(),
             driving: single_card.find(".maxDrivingTimeInput").val(),
             deprivation: single_card.find(".minIMDInput").val(),
+            income: single_card.find(".incomeRankInput").val(),
+            crime: single_card.find(".crimeRankInput").val(),
+            health: single_card.find(".healthRankInput").val(),
+            education: single_card.find(".educationRankInput").val(),
+            services: single_card.find(".servicesRankInput").val(),
+            environment: single_card.find(".environmentRankInput").val(),
             radius: single_card.find(".maxRadiusInput").val(),
             minarea: single_card.find(".minAreaRadiusInput").val(),
             simplify: single_card.find(".simplifyFactorInput").val(),
