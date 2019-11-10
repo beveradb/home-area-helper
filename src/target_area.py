@@ -20,6 +20,12 @@ def get_target_area_polygons(
         max_train_time_mins: int,
         max_driving_time_mins: int,
         min_deprivation_rank: int,
+        min_income_rank: int,
+        min_crime_rank: int,
+        min_health_rank: int,
+        min_education_rank: int,
+        min_services_rank: int,
+        min_environment_rank: int,
         min_area_miles: float,
         max_radius_miles: float,
         simplify_factor: float,
@@ -87,18 +93,29 @@ def get_target_area_polygons(
         #         'polygon': combined_transport_poly
         #     }
 
-        if min_deprivation_rank > 0:
-            imd_multipoly = get_bounded_min_rank_multipoly(result_polygons.bounds, min_deprivation_rank)
-            imd_multipoly_joined = join_multi_to_single_poly(imd_multipoly)
-            return_object['deprivation'] = {
-                'label': 'Deprivation Rank >= ' + str(min_deprivation_rank),
-                'polygon': imd_multipoly_joined
-            }
+        deprivation_filter_values = {
+            'deprivation': {'label': 'Deprivation Rank', 'value': min_deprivation_rank},
+            'income': {'label': 'Income Rank', 'value': min_income_rank},
+            'crime': {'label': 'Crime Rank', 'value': min_crime_rank},
+            'health': {'label': 'Health Rank', 'value': min_health_rank},
+            'education': {'label': 'Education Rank', 'value': min_education_rank},
+            'services': {'label': 'Access to Services Rank', 'value': min_services_rank},
+            'environment': {'label': 'Living Environment Rank', 'value': min_environment_rank},
+        }
 
-            result_polygons = intersect_multipoly_by_min_rank(result_polygons, min_deprivation_rank)
+        for filter_name, filter_obj in deprivation_filter_values.items():
+            if filter_obj['value'] > 0:
+                imd_multipoly = get_bounded_min_rank_multipoly(result_polygons.bounds, filter_name, filter_obj['value'])
+                imd_multipoly_joined = join_multi_to_single_poly(imd_multipoly)
+                return_object[filter_name] = {
+                    'label': filter_obj['label'] + ' >= ' + str(filter_obj['value']),
+                    'polygon': imd_multipoly_joined
+                }
 
-            result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
-            logging.info("Total result_polygons after min_deprivation_rank filter: " + str(result_polygons_length))
+                result_polygons = intersect_multipoly_by_min_rank(result_polygons, filter_name, filter_obj['value'])
+
+                result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
+                logging.info("Total result_polygons after " + filter_name + " filter: " + str(result_polygons_length))
 
         if result_polygons_length > 0:
             if min_area_miles > 0:
@@ -172,6 +189,12 @@ def get_target_areas_polygons_json(targets_params: list):
         target_results = get_target_area_polygons(
             target_location_address=str(params['target']),
             min_deprivation_rank=int(params['deprivation']),
+            min_income_rank=int(params['income']),
+            min_crime_rank=int(params['crime']),
+            min_health_rank=int(params['health']),
+            min_education_rank=int(params['education']),
+            min_services_rank=int(params['services']),
+            min_environment_rank=int(params['environment']),
             max_walking_time_mins=int(params['walking']),
             max_cycling_time_mins=int(params['cycling']),
             max_bus_time_mins=int(params['bus']),
