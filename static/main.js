@@ -314,7 +314,6 @@ function load_saved_search(search_object) {
     search_targets_array.forEach(function (target_search, target_index) {
         let new_target_card = add_new_target_to_accordion(false);
 
-        new_target_card.find(".targetAddressInput").val(target_search['target']).focus();
         if (target_search['walking']) new_target_card.find(".maxWalkingTimeInput").val(target_search['walking']);
         if (target_search['cycling']) new_target_card.find(".maxCyclingTimeInput").val(target_search['cycling']);
         if (target_search['bus']) new_target_card.find(".maxBusTimeInput").val(target_search['bus']);
@@ -332,6 +331,8 @@ function load_saved_search(search_object) {
         if (target_search['minarea'] > 0) new_target_card.find(".minAreaRadiusInput").val(target_search['minarea']);
         if (target_search['simplify'] > 0) new_target_card.find(".simplifyFactorInput").val(target_search['simplify']);
         if (target_search['buffer'] > 0) new_target_card.find(".bufferFactorInput").val(target_search['buffer']);
+
+        new_target_card.find(".targetAddressInput").val(target_search['target']).focus();
     });
 
     validate_and_submit_request();
@@ -389,6 +390,45 @@ function validate_and_submit_request() {
     );
 }
 
+function get_target_button_text(targetKey, $targetCard) {
+    let targetArray = get_single_target_array($targetCard);
+
+    let targetTitle = '#' + targetKey + ": ";
+    targetTitle += targetArray['target'] + ", ";
+
+    let skipKeys = ['target', 'radius', 'minarea', 'simplify', 'buffer'];
+
+    let labelMap = {
+        walking: {prefix: '', suffix: 'm 🚶'},
+        cycling: {prefix: '', suffix: 'm 🚲'},
+        bus: {prefix: '', suffix: 'm 🚌'},
+        coach: {prefix: '', suffix: 'm 🚐'},
+        train: {prefix: '', suffix: 'm 🚆'},
+        driving: {prefix: '', suffix: 'm 🚗'},
+        deprivation: {prefix: '📊 > ', suffix: ''},
+        income: {prefix: '💰 > ', suffix: ''},
+        crime: {prefix: '👮 > ', suffix: ''},
+        health: {prefix: '💊 > ', suffix: ''},
+        education: {prefix: '🎓 > ', suffix: ''},
+        services: {prefix: '🏪 > ', suffix: ''},
+        environment: {prefix: '🌳 > ', suffix: ''},
+    };
+
+    let sections = [];
+
+    Object.keys(targetArray).forEach(function (key) {
+        if (skipKeys.includes(key)) return;
+
+        if (targetArray[key]) {
+            sections.push(labelMap[key]['prefix'] + targetArray[key] + labelMap[key]['suffix']);
+        }
+    });
+
+    targetTitle += sections.join(', ');
+
+    return targetTitle;
+}
+
 function add_new_target_to_accordion(showTargetCard) {
     let targetsAccordion = $('#targetsAccordion');
     let newTargetCard = $('#targetCardTemplate').clone();
@@ -423,8 +463,7 @@ function add_new_target_to_accordion(showTargetCard) {
     newTargetCard.find('.targetAddressInput').focus();
 
     newTargetCard.find('input').focus(function () {
-        let targetAddress = newTargetCard.find('.targetAddressInput');
-        let buttonText = 'Target #' + newTargetKey + ": " + targetAddress.val();
+        let buttonText = get_target_button_text(newTargetKey, newTargetCard);
 
         newCollapseButton.text(buttonText);
     });
@@ -460,32 +499,36 @@ function toggle_loading_buttons() {
     $('#targetsAccordion .collapse').collapse('hide');
 }
 
+function get_single_target_array(single_card) {
+    return {
+        target: single_card.find(".targetAddressInput").val(),
+        walking: single_card.find(".maxWalkingTimeInput").val(),
+        cycling: single_card.find(".maxCyclingTimeInput").val(),
+        bus: single_card.find(".maxBusTimeInput").val(),
+        coach: single_card.find(".maxCoachTimeInput").val(),
+        train: single_card.find(".maxTrainTimeInput").val(),
+        driving: single_card.find(".maxDrivingTimeInput").val(),
+        deprivation: single_card.find(".minIMDInput").val(),
+        income: single_card.find(".incomeRankInput").val(),
+        crime: single_card.find(".crimeRankInput").val(),
+        health: single_card.find(".healthRankInput").val(),
+        education: single_card.find(".educationRankInput").val(),
+        services: single_card.find(".servicesRankInput").val(),
+        environment: single_card.find(".environmentRankInput").val(),
+        radius: single_card.find(".maxRadiusInput").val(),
+        minarea: single_card.find(".minAreaRadiusInput").val(),
+        simplify: single_card.find(".simplifyFactorInput").val(),
+        buffer: single_card.find(".bufferFactorInput").val()
+    };
+}
+
 function build_targets_array() {
     let allTargets = [];
 
     $('#targetsAccordion div.targetCard').each(function () {
         let single_card = $(this);
 
-        let singleTargetData = {
-            target: single_card.find(".targetAddressInput").val(),
-            walking: single_card.find(".maxWalkingTimeInput").val(),
-            cycling: single_card.find(".maxCyclingTimeInput").val(),
-            bus: single_card.find(".maxBusTimeInput").val(),
-            coach: single_card.find(".maxCoachTimeInput").val(),
-            train: single_card.find(".maxTrainTimeInput").val(),
-            driving: single_card.find(".maxDrivingTimeInput").val(),
-            deprivation: single_card.find(".minIMDInput").val(),
-            income: single_card.find(".incomeRankInput").val(),
-            crime: single_card.find(".crimeRankInput").val(),
-            health: single_card.find(".healthRankInput").val(),
-            education: single_card.find(".educationRankInput").val(),
-            services: single_card.find(".servicesRankInput").val(),
-            environment: single_card.find(".environmentRankInput").val(),
-            radius: single_card.find(".maxRadiusInput").val(),
-            minarea: single_card.find(".minAreaRadiusInput").val(),
-            simplify: single_card.find(".simplifyFactorInput").val(),
-            buffer: single_card.find(".bufferFactorInput").val()
-        };
+        let singleTargetData = get_single_target_array(single_card);
 
         // Default all values to 0 if not set
         for (let key in singleTargetData) {
