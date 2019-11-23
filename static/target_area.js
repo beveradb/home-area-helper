@@ -1,9 +1,3 @@
-window.mainMap = {
-    'map': null,
-    'currentMarkers': [],
-    'currentLayers': []
-};
-
 function map_loaded(map) {
     window.mainMap.map = map;
 
@@ -75,6 +69,10 @@ $(function () {
         return false;
     });
 });
+
+function get_results_url() {
+    return "/target_area";
+}
 
 function check_and_load_search_from_url_hash() {
     if (window.location.hash) {
@@ -288,7 +286,7 @@ function load_last_property_filters() {
 }
 
 function save_current_search() {
-    if (check_targets_validity() === false) {
+    if (check_form_validity() === false) {
         return;
     }
 
@@ -343,11 +341,16 @@ function load_saved_search(search_object) {
         if (target_search['education']) new_target_card.find(".educationRankInput").val(target_search['education']);
         if (target_search['services']) new_target_card.find(".servicesRankInput").val(target_search['services']);
         if (target_search['environment']) new_target_card.find(".environmentRankInput").val(target_search['environment']);
-        if (target_search['fallbackradius'] > 0) new_target_card.find(".fallbackRadiusInput").val(target_search['fallbackradius']);
         if (target_search['maxradius'] > 0) new_target_card.find(".maxRadiusInput").val(target_search['maxradius']);
         if (target_search['minarea'] > 0) new_target_card.find(".minAreaRadiusInput").val(target_search['minarea']);
         if (target_search['simplify'] > 0) new_target_card.find(".simplifyFactorInput").val(target_search['simplify']);
         if (target_search['buffer'] > 0) new_target_card.find(".bufferFactorInput").val(target_search['buffer']);
+
+        if (target_search['fallbackradius'] > 0) {
+            new_target_card.find(".fallbackRadiusInput").val(target_search['fallbackradius']);
+        } else {
+            new_target_card.find(".fallbackRadiusInput").val(1);
+        }
 
         new_target_card.find(".targetAddressInput").val(target_search['target']).focus();
     });
@@ -356,7 +359,7 @@ function load_saved_search(search_object) {
 }
 
 function get_current_search() {
-    let current_search_targets = build_targets_array();
+    let current_search_targets = build_input_params_array();
     return {
         saved_date: new Date().toISOString(),
         targets: current_search_targets
@@ -379,32 +382,6 @@ function clear_current_search() {
     clear_map(window.mainMap.map);
     $('#searchActionButtons').hide();
     $("#propertyButton").hide();
-}
-
-function validate_and_submit_request() {
-    if (check_targets_validity() === false) {
-        return;
-    }
-
-    toggle_loading_buttons();
-
-    request_and_plot_areas(
-        build_targets_array(),
-        function () {
-            window.location.hash = encodeURIComponent(JSON.stringify(get_current_search()));
-            toggle_loading_buttons();
-
-            $('#searchActionButtons').show();
-            $("#propertyButton").show();
-
-            // For UX on mobile devices where map starts off screen
-            $('#map').get(0).scrollIntoView();
-        },
-        function (jqXHR) {
-            show_iframe_error_modal(jqXHR.responseText);
-            toggle_loading_buttons();
-        }
-    );
 }
 
 function get_target_button_text(targetKey, $targetCard) {
@@ -495,21 +472,7 @@ function add_new_target_to_accordion(showTargetCard) {
     return newTargetCard;
 }
 
-function show_iframe_error_modal(error_message_html) {
-    $('#messageModalTitle').text("Server Error");
-    let errorFrame = $("<iframe class='errorFrame'></iframe>");
-    errorFrame.attr('srcdoc', error_message_html);
-    $('#messageModalBody').empty().append(errorFrame);
-    $('#messageModal').modal();
-}
-
-function show_html_modal(title, message) {
-    $('#messageModalTitle').text(title);
-    $('#messageModalBody').html(message);
-    $('#messageModal').modal();
-}
-
-function toggle_loading_buttons() {
+function toggle_loading_state() {
     $("#generateButton").toggle();
     $('#generateButtonLoading').toggle();
     $("#propertyButton").hide();
@@ -540,7 +503,7 @@ function get_single_target_array(single_card) {
     };
 }
 
-function build_targets_array() {
+function build_input_params_array() {
     let allTargets = [];
 
     $('#targetsAccordion div.targetCard').each(function () {
@@ -566,7 +529,7 @@ function build_targets_array() {
     return allTargets;
 }
 
-function check_targets_validity() {
+function check_form_validity() {
     let no_invalid_targets = true;
     let at_least_one_valid_target = false;
 
@@ -742,46 +705,22 @@ function build_polyline_for_url() {
             "type": "Feature",
             "geometry": {
                 "type": "LineString",
-                "coordinates": window.currentAllTargetsData['result_intersection']['polygon']['coordinates'][0]
+                "coordinates": window.currentlyPlottedData['result_intersection']['polygon']['coordinates'][0]
             },
             "properties": {}
         }, 5
     )
 }
 
-function request_and_plot_areas(
-    allTargetsData,
-    successCallback,
-    errorCallback
-) {
-    clear_map(window.mainMap.map);
-
-    let targetAreaURL = "/target_area";
-
-    $.ajax({
-        url: targetAreaURL,
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(allTargetsData),
-        success: function (data) {
-            window.currentAllTargetsData = data;
-            plot_results(data);
-
-            if (successCallback) {
-                successCallback();
-            }
-        },
-        error: function (jqXHR, textStatus) {
-            if (errorCallback) {
-                errorCallback(jqXHR, textStatus);
-            }
-        }
-    });
+function after_plot_callback() {
+    window.location.hash = encodeURIComponent(JSON.stringify(get_current_search()));
+    $('#searchActionButtons').show();
+    $("#propertyButton").show();
 }
 
 function plot_results(api_call_data) {
-    // Accessible, distinct colours from https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/
-    let layer_colours = ["#e6194B", "#4363d8", "#f58231", "#f032e6", "#469990", "#9A6324", "#800000", "#000075"];
+    window.currentlyPlottedData = api_call_data;
+
     let result_green = "#3cb44b";
 
     let current_colour = 1;
@@ -800,11 +739,11 @@ function plot_results(api_call_data) {
                     key + "-" + target_index,
                     target_prefix + single_result['label'],
                     single_result['polygon'],
-                    layer_colours[current_colour], 0.5, false
+                    window.hah_layer_colours[current_colour], 0.5, false
                 );
 
                 current_colour++;
-                if (current_colour >= layer_colours.length) {
+                if (current_colour >= window.hah_layer_colours.length) {
                     current_colour = 0;
                 }
             }
@@ -824,86 +763,6 @@ function plot_results(api_call_data) {
             result_intersection['polygon'], result_green, 0.7, true
         );
 
-        map.fitBounds(result_intersection['bounds']);
-    }
-}
-
-function plot_marker(label, coords) {
-    let popup = new mapboxgl.Popup({offset: 25})
-        .setText(label);
-
-    let targetMarker = new mapboxgl.Marker()
-        .setLngLat(coords)
-        .setPopup(popup)
-        .addTo(map);
-
-    window.mainMap.currentMarkers.push(targetMarker);
-}
-
-function plot_polygon(id, label, polygon, color, opacity = 0.3, visible = true) {
-    window.mainMap.currentLayers.push(id);
-
-    let menuItem = $(
-        "<a href='#' style='background-color: " + color + "'>" + label + "</a>"
-    );
-
-    if (visible) menuItem.addClass('active');
-
-    menuItem.click(function (e) {
-        let visibility = window.mainMap.map.getLayoutProperty(id, 'visibility');
-
-        if (visibility === 'visible') {
-            window.mainMap.map.setLayoutProperty(id, 'visibility', 'none');
-            $(this).removeClass('active');
-        } else {
-            $(this).addClass('active');
-            window.mainMap.map.setLayoutProperty(id, 'visibility', 'visible');
-        }
-        return false;
-    });
-
-    $("#map-filter-menu").append(menuItem);
-
-    window.mainMap.map.addLayer({
-        'id': id,
-        'type': 'fill',
-        'source': {
-            'type': 'geojson',
-            'data': {
-                'type': 'Feature',
-                'geometry': polygon
-            }
-        },
-        'layout': {
-            'visibility': (visible ? 'visible' : 'none')
-        },
-        'paint': {
-            'fill-color': color,
-            'fill-opacity': opacity
-        },
-        'metadata': {
-            'home-area-helper': true
-        }
-    });
-}
-
-function clear_map() {
-    $('#map-filter-menu').empty().hide();
-
-    if (window.mainMap.currentMarkers !== null) {
-        for (let i = window.mainMap.currentMarkers.length - 1; i >= 0; i--) {
-            window.mainMap.currentMarkers[i].remove();
-        }
-    }
-
-    if (window.mainMap.currentLayers !== null && window.mainMap.map) {
-        let hhaLayers = window.mainMap.map.getStyle().layers.filter(function (el) {
-            return (el['metadata'] && el['metadata']['home-area-helper']);
-        });
-
-        for (let i = hhaLayers.length - 1; i >= 0; i--) {
-            window.mainMap.map.removeLayer(hhaLayers[i]['id']);
-            window.mainMap.map.removeSource(hhaLayers[i]['id']);
-        }
+        window.mainMap.map.fitBounds(result_intersection['bounds']);
     }
 }

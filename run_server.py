@@ -10,7 +10,7 @@ import ucache
 from flask import Flask, render_template, Response, request
 from flask_sslify import SSLify
 
-from src import target_area, utils
+from src import utils
 from src.utils import preload_files
 
 app = Flask(__name__)
@@ -43,23 +43,45 @@ transient_cache = ucache.SqliteCache(
 
 
 @app.route('/')
-def index():
+def target_area_request():
     # This script requires you define environment variables with your personal API keys:
     # MAPBOX_ACCESS_TOKEN from https://docs.mapbox.com/help/how-mapbox-works/access-tokens/
     # TRAVELTIME_APP_ID from https://docs.traveltimeplatform.com/overview/introduction
     # TRAVELTIME_API_KEY from https://docs.traveltimeplatform.com/overview/introduction
 
     return render_template(
-        'index.html',
+        'target_area.html',
         MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN']
     )
+
+
+@app.route('/target-cities')
+def target_cities_request():
+    return render_template(
+        'target_cities.html',
+        MAPBOX_ACCESS_TOKEN=os.environ['MAPBOX_ACCESS_TOKEN']
+    )
+
+
+@app.route('/target_cities', methods=['POST'])
+def target_cities_json():
+    req_data = request.get_json()
+    logging.log(logging.INFO, "Target cities request received: " + str(req_data))
+
+    from src import target_cities
+    results = target_cities.get_target_cities_data_json(req_data)
+
+    utils.log_method_timings()
+
+    return Response(results, mimetype='application/json')
 
 
 @app.route('/target_area', methods=['POST'])
 def target_area_json():
     req_data = request.get_json()
-    logging.log(logging.INFO, "Request received: " + str(req_data))
+    logging.log(logging.INFO, "Target area request received: " + str(req_data))
 
+    from src import target_area
     results = target_area.get_target_areas_polygons_json(req_data)
 
     utils.log_method_timings()
