@@ -2,8 +2,7 @@
 
 import matplotlib.pyplot as plt
 
-from src import mapbox
-from src import travel_time
+from src import travel_time, google_maps
 from src.imd_tools import *
 from src.multi_polygons import *
 from src.utils import timeit
@@ -27,15 +26,17 @@ def get_target_area_polygons(
         min_services_rank: int,
         min_environment_rank: int,
         min_area_miles: float,
+        fallback_radius_miles: float,
         max_radius_miles: float,
         simplify_factor: float,
         buffer_factor: float
 ) -> dict:
     return_object = {}
 
-    target_lng_lat = mapbox.get_centre_point_lng_lat_for_address(
+    target_lng_lat = google_maps.get_centre_point_lng_lat_for_address(
         target_location_address
     )
+
     return_object['target'] = {
         'label': 'Target: ' + target_location_address,
         'coords': target_lng_lat
@@ -75,11 +76,16 @@ def get_target_area_polygons(
 
     logging.info("Total result_polygons with all transports: " + str(len(result_polygons)))
 
-    if min_area_miles > 0:
-        result_polygons = filter_multipoly_by_min_area(result_polygons, min_area_miles)
+    result_polygons_length = len(result_polygons)
 
-    result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
-    logging.info("Total result_polygons after transport min area filter: " + str(result_polygons_length))
+    if result_polygons_length > 0:
+        if min_area_miles > 0:
+            result_polygons = filter_multipoly_by_min_area(result_polygons, min_area_miles)
+
+        result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
+        logging.info("Total result_polygons after transport min area filter: " + str(result_polygons_length))
+    else:
+        result_intersection = get_bounding_circle_for_point(target_lng_lat, fallback_radius_miles)
 
     if result_polygons_length > 0:
         # combined_transport_poly = join_multi_to_single_poly(result_polygons)
@@ -201,7 +207,8 @@ def get_target_areas_polygons_json(targets_params: list):
             max_coach_time_mins=int(params['coach']),
             max_train_time_mins=int(params['train']),
             max_driving_time_mins=int(params['driving']),
-            max_radius_miles=float(params['radius']),
+            fallback_radius_miles=float(params['fallbackradius']),
+            max_radius_miles=float(params['maxradius']),
             min_area_miles=float(params['minarea']),
             simplify_factor=float(params['simplify']),
             buffer_factor=float(params['buffer'])

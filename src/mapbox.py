@@ -33,6 +33,8 @@ def get_centre_point_lng_lat_for_address(address_string):
     geocoder = Geocoder()
     target_location_geocode = geocoder.forward(address_string)
     target_location_geocode_feature = target_location_geocode.geojson()['features'][0]
+
+    # Returns list with coords in order lon, lat
     return target_location_geocode_feature['geometry']['coordinates']
 
 

@@ -20,3 +20,4 @@ backoff
 flask_sslify
 pyunpack
 patool
+googlemaps

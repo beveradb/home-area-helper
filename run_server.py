@@ -3,6 +3,9 @@ import logging
 import os
 
 import requests_cache
+# This import of shapely is to workaround a GEOS bug: https://github.com/Toblerity/Shapely/issues/553
+# noinspection PyUnresolvedReferences
+import shapely.geometry
 import ucache
 from flask import Flask, render_template, Response, request
 from flask_sslify import SSLify
