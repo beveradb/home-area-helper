@@ -26,6 +26,21 @@ $(function () {
         return false;
     });
 
+    $("#addTargetsFromClipboard").click(function (e) {
+        navigator.clipboard.readText().then(function (clipboard_text) {
+            try {
+                clipboard_text.split(/\n/).forEach(function (target_string) {
+                    let new_target_card = add_new_target_to_accordion(false);
+                    new_target_card.find(".targetAddressInput").val(target_string).focus();
+                });
+            } catch (e) {
+                alert("Clipboard did not contain any plain text to load targets from!");
+            }
+        });
+
+        return false;
+    });
+
     $("#loadLastSearchButton").click(function (e) {
         let saved_searches = get_saved_searches();
         if (saved_searches.length) {

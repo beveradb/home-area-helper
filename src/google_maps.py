@@ -3,10 +3,12 @@ import os
 
 import googlemaps
 
+from run_server import transient_cache
 from src.utils import timeit
 
 
 @timeit
+@transient_cache.cached()
 def get_centre_point_lng_lat_for_address(address_string):
     gmaps = googlemaps.Client(key=os.environ['GMAPS_API_KEY'])
 
