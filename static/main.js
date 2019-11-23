@@ -605,14 +605,21 @@ function show_property_search_modal() {
 
     load_last_property_filters();
 
-    $('#zooplaSearchButton').off().click(function (e) {
+    function showPropertySearchLinkModal(url, title) {
         save_last_property_filters();
-        window.open(build_zoopla_url(), '_blank');
+        $('#propertySearchModal').modal('hide');
+        let link_html = "<a href='" + url + "' target='_blank'>" + title + "</a>";
+        link_html += " (Length: " + link_html.length + " chars) <br /><br />";
+        link_html += "- If you get a '400 Bad Request' error, try right-clicking and opening in Incognito";
+        show_html_modal(title, link_html);
+    }
+
+    $('#zooplaSearchButton').off().click(function (e) {
+        showPropertySearchLinkModal(build_zoopla_url(), 'Zoopla Link');
     });
 
     $('#rightmoveSearchButton').off().click(function (e) {
-        save_last_property_filters();
-        window.open(build_rightmove_url(), '_blank');
+        showPropertySearchLinkModal(build_rightmove_url(), 'Rightmove Link');
     });
 
     $('#rightmoveDrawButton').off().click(function (e) {
