@@ -29,12 +29,16 @@ def get_target_cities(params: dict):
 def get_filtered_cities_combined_data_dict(country):
     eurostat_data_dir = 'datasets/europe/eurostat-cities-2019/'
 
-    eurostat_df = {
+    eurostat_meta_df = {
         'Indicator list': pd.read_excel(eurostat_data_dir + 'urb_esms_an1.xlsx'),
         'Validation rules': pd.read_excel(eurostat_data_dir + 'urb_esms_an2.xlsx'),
         'Variable list': pd.read_excel(eurostat_data_dir + 'urb_esms_an3.xls'),
         'List of cities': pd.read_excel(eurostat_data_dir + 'urb_esms_an4.xls'),
+        'Perception Indicators': pd.read_csv(eurostat_data_dir + 'urb_percep_indicators.tsv', sep='\t', header=None,
+                                             names=['Code', 'Label']),
+    }
 
+    eurostat_df = {
         'Economy and finance':
             pd.read_csv(eurostat_data_dir + 'urb_cecfi.tsv.gz', sep='\t', header=0,
                         compression='gzip', error_bad_lines=False),
@@ -86,14 +90,14 @@ def get_filtered_cities_combined_data_dict(country):
 
     # Example CODE value for a UK city: UK007C1
     city_code_regex = '^' + country + '[0-9]+C[0-9]+$'
-    cities_filtered_df = eurostat_df['List of cities'][
-        eurostat_df['List of cities']['CODE'].str.contains(city_code_regex)
+
+    cities_filtered_df = eurostat_meta_df['List of cities'][
+        eurostat_meta_df['List of cities']['CODE'].str.contains(city_code_regex)
     ]
 
-    indicators_map = eurostat_df['Indicator list'].set_index('CODE').to_dict(orient='index')
-    variables_map = eurostat_df['Variable list'].set_index('Code').to_dict(orient='index')
-    print(indicators_map)
-    print(variables_map)
+    indicators_map = eurostat_meta_df['Indicator list'].set_index('CODE').to_dict(orient='index')
+    variables_map = eurostat_meta_df['Variable list'].set_index('Code').to_dict(orient='index')
+    perception_map = eurostat_meta_df['Perception Indicators'].set_index('Code').to_dict(orient='index')
 
     result_cities_list = []
 
@@ -102,30 +106,38 @@ def get_filtered_cities_combined_data_dict(country):
 
         single_city_data = {
             'Code': city_code,
-            'Name': cities_row['NAME'],
-            'Population Data': {}
+            'Name': cities_row['NAME']
         }
 
         city_data_regex = city_code + '$'
 
-        first_col_name = eurostat_df['Population'].columns[0]
-        city_data_df = eurostat_df['Population'][
-            eurostat_df['Population'][first_col_name].str.contains(city_data_regex)
-        ]
+        for category_index, category_name in enumerate(eurostat_df):
+            category_df = eurostat_df[category_name]
+            first_col_name = category_df.columns[0]
+            city_data_df = category_df[
+                category_df[first_col_name].str.contains(city_data_regex)
+            ]
+            single_city_data[category_name] = {}
 
-        for city_data_idx, city_data_row in city_data_df.iterrows():
-            city_data_indicator = city_data_row[first_col_name]
-            city_data_indicator = city_data_indicator.split(',')[0]
-            city_data_indicator = variables_map[city_data_indicator]['Label']
+            for city_data_idx, city_data_row in city_data_df.iterrows():
+                city_data_indicator = city_data_row[first_col_name]
+                city_data_indicator = city_data_indicator.split(',')[0]
 
-            for city_data_col_idx, city_data_year in enumerate(eurostat_df['Population'].columns):
-                if city_data_col_idx == 0:
-                    continue
+                if city_data_indicator in variables_map.keys():
+                    city_data_indicator = variables_map[city_data_indicator]['Label']
+                elif city_data_indicator in indicators_map.keys():
+                    city_data_indicator = indicators_map[city_data_indicator]['LABEL']
+                elif city_data_indicator in perception_map.keys():
+                    city_data_indicator = perception_map[city_data_indicator]['Label']
 
-                city_data_value = city_data_row[city_data_year]
-                if city_data_value != ': ':
-                    single_city_data['Population Data'][city_data_indicator] = city_data_value
-                    break
+                for city_data_col_idx, city_data_year in enumerate(category_df.columns):
+                    if city_data_col_idx == 0:
+                        continue
+
+                    city_data_value = city_data_row[city_data_year]
+                    if city_data_value != ': ':
+                        single_city_data[category_name][city_data_indicator] = city_data_value
+                        break
 
         result_cities_list.append(single_city_data)
 
