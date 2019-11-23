@@ -24,6 +24,7 @@ logging.getLogger().setLevel(logging.DEBUG if app_debug else logging.INFO)
 # Download dataset files and pre-seeded API call / compute cache to reduce slug size
 preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.6/', [
     {'dir': 'datasets/uk/', 'file': 'uk-wgs84-imd-shapefiles.zip'},
+    {'dir': 'datasets/europe/', 'file': 'eurostat-cities-2019.zip'},
     {'dir': 'caches/', 'file': 'requests_cache.sqlite.zip'},
     {'dir': 'caches/', 'file': 'static_cache.sqlite'},
 ])
@@ -72,6 +73,17 @@ def target_cities_json():
     results = target_cities.get_target_cities_data_json(req_data)
 
     utils.log_method_timings()
+
+    return Response(results, mimetype='application/json')
+
+
+@app.route('/eurostat_testing/<string:country>', methods=['GET'])
+def eurostat_testing(country):
+    req_data = request.get_json()
+    logging.log(logging.INFO, "Target eurostat received: " + str(country))
+
+    from src import target_cities
+    results = target_cities.get_filtered_cities_combined_data_dict(country)
 
     return Response(results, mimetype='application/json')
 

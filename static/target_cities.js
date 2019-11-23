@@ -60,6 +60,12 @@ function plot_results(api_call_data) {
     $('#map-filter-menu').show();
 
     if (results_combined) {
+        let result_green = "#3cb44b";
+        
+        plot_polygon('results_combined', results_combined['label'],
+            results_combined['polygon'], result_green, 0.7, true
+        );
+
         window.mainMap.map.fitBounds(results_combined['bounds']);
     }
 }
