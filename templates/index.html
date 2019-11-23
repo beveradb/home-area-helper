@@ -184,13 +184,23 @@
                                     <div class="adjustShapeSection collapse mt-3">
                                         <div class="form-row">
                                             <div class="form-group col-12 col-xl-6">
+                                                <label for="fallbackRadiusInput">Fallback Radius <small>(mi)</small></label>
+                                                <input type="number" class="form-control fallbackRadiusInput"
+                                                       placeholder="" min="0.01" step="0.01" value="1">
+                                                <small id="fallbackRadiusHelp" class="form-text text-muted">
+                                                    If no travel time options are set, fallback to this radius around target.
+                                                </small>
+                                            </div>
+                                            <div class="form-group col-12 col-xl-6">
                                                 <label for="maxRadiusInput">Max. Radius <small>(mi)</small></label>
                                                 <input type="number" class="form-control maxRadiusInput"
                                                        placeholder="" step="0.01">
                                                 <small id="maxRadiusHelp" class="form-text text-muted">
-                                                    Limit resulting shape to max radius. May help filter out outliers.
+                                                    Limit resulting shape to those within bounding radius. May help filter out outliers.
                                                 </small>
                                             </div>
+                                        </div>
+                                        <div class="form-row">
                                             <div class="form-group col-12 col-xl-6">
                                                 <label for="minAreaRadiusInput">Min. Area <small>(deg)</small></label>
                                                 <input type="number" class="form-control minAreaRadiusInput"
@@ -231,6 +241,11 @@
                     <div class="form-group col-12">
                         <button type="button" class="btn btn-outline-primary btn-block" id="addTargetButton">
                             Add Target
+                        </button>
+                    </div>
+                    <div class="form-group col-12">
+                        <button type="button" class="btn btn-outline-secondary btn-block" id="addTargetsFromClipboard">
+                            Add Targets from Clipboard
                         </button>
                     </div>
                 </div>

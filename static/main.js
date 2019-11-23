@@ -26,6 +26,21 @@ $(function () {
         return false;
     });
 
+    $("#addTargetsFromClipboard").click(function (e) {
+        navigator.clipboard.readText().then(function (clipboard_text) {
+            try {
+                clipboard_text.split(/\n/).forEach(function (target_string) {
+                    let new_target_card = add_new_target_to_accordion(false);
+                    new_target_card.find(".targetAddressInput").val(target_string).focus();
+                });
+            } catch (e) {
+                alert("Clipboard did not contain any plain text to load targets from!");
+            }
+        });
+
+        return false;
+    });
+
     $("#loadLastSearchButton").click(function (e) {
         let saved_searches = get_saved_searches();
         if (saved_searches.length) {
@@ -86,7 +101,8 @@ function show_saved_searches_modal() {
         education: "Education",
         services: "Access to services",
         environment: "Living Environment",
-        radius: "Max. Radius",
+        fallbackradius: "Fall. Rad",
+        maxradius: "Max. Radius",
         minarea: "Min. Area",
         simplify: "Simplify",
         buffer: "Buffer"
@@ -327,7 +343,8 @@ function load_saved_search(search_object) {
         if (target_search['education']) new_target_card.find(".educationRankInput").val(target_search['education']);
         if (target_search['services']) new_target_card.find(".servicesRankInput").val(target_search['services']);
         if (target_search['environment']) new_target_card.find(".environmentRankInput").val(target_search['environment']);
-        if (target_search['radius'] > 0) new_target_card.find(".maxRadiusInput").val(target_search['radius']);
+        if (target_search['fallbackradius'] > 0) new_target_card.find(".fallbackRadiusInput").val(target_search['fallbackradius']);
+        if (target_search['maxradius'] > 0) new_target_card.find(".maxRadiusInput").val(target_search['maxradius']);
         if (target_search['minarea'] > 0) new_target_card.find(".minAreaRadiusInput").val(target_search['minarea']);
         if (target_search['simplify'] > 0) new_target_card.find(".simplifyFactorInput").val(target_search['simplify']);
         if (target_search['buffer'] > 0) new_target_card.find(".bufferFactorInput").val(target_search['buffer']);
@@ -396,7 +413,7 @@ function get_target_button_text(targetKey, $targetCard) {
     let targetTitle = '#' + targetKey + ": ";
     targetTitle += targetArray['target'] + ", ";
 
-    let skipKeys = ['target', 'radius', 'minarea', 'simplify', 'buffer'];
+    let skipKeys = ['target', 'maxradius', 'fallbackradius', 'minarea', 'simplify', 'buffer'];
 
     let labelMap = {
         walking: {prefix: '', suffix: 'm 🚶'},
@@ -515,7 +532,8 @@ function get_single_target_array(single_card) {
         education: single_card.find(".educationRankInput").val(),
         services: single_card.find(".servicesRankInput").val(),
         environment: single_card.find(".environmentRankInput").val(),
-        radius: single_card.find(".maxRadiusInput").val(),
+        fallbackradius: single_card.find(".fallbackRadiusInput").val(),
+        maxradius: single_card.find(".maxRadiusInput").val(),
         minarea: single_card.find(".minAreaRadiusInput").val(),
         simplify: single_card.find(".simplifyFactorInput").val(),
         buffer: single_card.find(".bufferFactorInput").val()
@@ -536,7 +554,8 @@ function build_targets_array() {
             if (!singleTargetData[key]) singleTargetData[key] = 0;
         }
 
-        singleTargetData['radius'] = parseFloat(singleTargetData['radius']).toFixed(8).replace(/0+$/, '');
+        singleTargetData['maxradius'] = parseFloat(singleTargetData['maxradius']).toFixed(8).replace(/0+$/, '');
+        singleTargetData['fallbackradius'] = parseFloat(singleTargetData['fallbackradius']).toFixed(8).replace(/0+$/, '');
         singleTargetData['minarea'] = parseFloat(singleTargetData['minarea']).toFixed(8).replace(/0+$/, '');
         singleTargetData['simplify'] = parseFloat(singleTargetData['simplify']).toFixed(8).replace(/0+$/, '');
         singleTargetData['buffer'] = parseFloat(singleTargetData['buffer']).toFixed(8).replace(/0+$/, '');
@@ -560,21 +579,6 @@ function check_targets_validity() {
         }).get().some(function (value) {
             return value === false;
         });
-
-        if (
-            !(single_card.find(".maxWalkingTimeInput").val()) &&
-            !(single_card.find(".maxCyclingTimeInput").val()) &&
-            !(single_card.find(".maxBusTimeInput").val()) &&
-            !(single_card.find(".maxCoachTimeInput").val()) &&
-            !(single_card.find(".maxTrainTimeInput").val()) &&
-            !(single_card.find(".maxDrivingTimeInput").val())
-        ) {
-            show_html_modal(
-                "Validation Error",
-                "At least one of the travel time options must be entered for each target!"
-            );
-            singleCardFormValid = false;
-        }
 
         if (singleCardFormValid === false) {
             singleCardFormInputs.each(function (key, elem) {

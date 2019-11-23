@@ -10,7 +10,7 @@ from mapbox import Geocoder
 from ratelimit import RateLimitException, limits
 from shapely.geometry import Polygon
 
-from run_server import requests_cache
+from run_server import requests_cache, transient_cache
 from src.utils import timeit
 
 
@@ -29,14 +29,18 @@ def call_mapbox_api(url):
 
 
 @timeit
+@transient_cache.cached()
 def get_centre_point_lng_lat_for_address(address_string):
     geocoder = Geocoder()
     target_location_geocode = geocoder.forward(address_string)
     target_location_geocode_feature = target_location_geocode.geojson()['features'][0]
+
+    # Returns list with coords in order lon, lat
     return target_location_geocode_feature['geometry']['coordinates']
 
 
 @timeit
+@transient_cache.cached()
 def get_isochrone_geometry(target_lng_lat, max_travel_time_mins, travel_mode):
     isochrone_url = "https://api.mapbox.com/isochrone/v1/mapbox/" + travel_mode + "/"
     isochrone_url += str(target_lng_lat[0]) + "," + str(target_lng_lat[1])
