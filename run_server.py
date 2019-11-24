@@ -26,7 +26,7 @@ logging.getLogger().setLevel(logging.DEBUG if app_debug else logging.INFO)
 preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.6/', [
     {'dir': 'datasets/uk/', 'file': 'uk-wgs84-imd-shapefiles.zip'},
     {'dir': 'datasets/europe/', 'file': 'eurostat-cities-2019.zip'},
-    {'dir': 'caches/', 'file': 'api_cache.sqlite.zip'},
+#    {'dir': 'caches/', 'file': 'api_cache.sqlite.zip'},
     {'dir': 'caches/', 'file': 'requests_cache.sqlite.zip'},
     {'dir': 'caches/', 'file': 'static_cache.sqlite'},
 ])
