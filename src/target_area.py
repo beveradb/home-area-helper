@@ -85,6 +85,8 @@ def get_target_area_polygons(
         result_polygons_length = 1 if not hasattr(result_polygons, 'geoms') else len(result_polygons.geoms)
         logging.info("Total result_polygons after transport min area filter: " + str(result_polygons_length))
     else:
+        if fallback_radius_miles == 0:
+            fallback_radius_miles = 1
         result_intersection = get_bounding_circle_for_point(target_lng_lat, fallback_radius_miles)
 
     if result_polygons_length > 0:

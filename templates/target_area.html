@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset='utf-8'/>
+    <title>Home Area Helper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+
+    <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'
+          integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'/>
+    <link rel='stylesheet' href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.css'/>
+    <link rel='stylesheet' href='{{ url_for('static', filename='shared.css') }}'/>
+
+    <script
+            src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mapbox/polyline@1.1.0/src/polyline.min.js"></script>
+
+    <script src='{{ url_for('static', filename='shared.js') }}'></script>
+    <script src='{{ url_for('static', filename='target_area.js') }}'></script>
+</head>
+<body>
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <div id="controls" class="col-12 col-lg-3">
+            <div class="jumbotron">
+                <h1>Home Area Helper</h1>
+                <p class="lead">Build property search area alerts based on target destination travel time and
+                    area deprivation.</p>
+                <small>Unsure where to target? Try our <a href="/target-cities">Target Cities</a> tool!</small>
+            </div>
+
+            <form id="generateSearchAreaForm">
+                <div class="accordion form-group" id="targetsAccordion">
+                    <div class="card" id="targetCardTemplate" data-targetkey="0" style="display: none">
+                        <div class="card-header container-fluid">
+                            <div class="row">
+                                <div class="col-10">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-link btn-block targetCardTitle text-left" type="button"
+                                                data-toggle="collapse"
+                                                aria-expanded="true">
+                                            Target Destination #
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div class="col-2 float-right">
+                                    <button class="btn btn-danger close" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collapse" data-parent="#targetsAccordion">
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <div class="form-group col-12">
+                                            <label for="targetAddressInput">Target Address</label>
+                                            <input type="text" class="form-control targetAddressInput"
+                                                   placeholder="" required>
+                                            <small class="form-text text-muted">
+                                                Destination address for travel time
+                                                calculations - e.g. workplace, city center, loved one</small>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxWalkingTimeInput">Walking <small>(min)</small></label>
+                                            <input type="number" class="form-control maxWalkingTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxCyclingTimeInput">Cycling <small>(min)</small></label>
+                                            <input type="number" class="form-control maxCyclingTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxBusTimeInput">Bus <small>(min)</small></label>
+                                            <input type="number" class="form-control maxBusTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxCoachTimeInput">Coach <small>(min)</small></label>
+                                            <input type="number" class="form-control maxCoachTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxTrainTimeInput">Train <small>(min)</small></label>
+                                            <input type="number" class="form-control maxTrainTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12 col-xl-4">
+                                            <label for="maxDrivingTimeInput">Driving <small>(min)</small></label>
+                                            <input type="number" class="form-control maxDrivingTimeInput"
+                                                   placeholder="" max="240">
+                                        </div>
+                                        <div class="form-group col-12">
+                                            <small id="maxTransportTimeHelp" class="form-text text-muted">
+                                                Maximum journey time to consider for each method of transport, in
+                                                minutes.<br/>
+                                                Leave blank to exclude if you won't travel by one of these methods.<br/>
+                                                These are <i>combined</i>, so if you can reach your target by any mode,
+                                                it'll be included.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-12">
+                                            <label for="minIMDInput">Minimum Combined Deprivation Rank
+                                                <small>(1-10)</small></label>
+                                            <input type="number" class="form-control minIMDInput"
+                                                   aria-describedby="minIMDHelp"
+                                                   placeholder="" min="1" max="10">
+                                            <small id="minIMDHelp" class="form-text text-muted">
+                                                Leave blank to allow all areas, 5 to allow only the top 50% least
+                                                deprived areas.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-outline-secondary btn-block specificDeprivationsToggleButton text-left"
+                                            type="button"
+                                            data-toggle="collapse"
+                                            data-target=".specificDeprivationsSection"
+                                            aria-expanded="false" aria-controls="specificDeprivationsSection">
+                                        + Specific Deprivation Indicators
+                                    </button>
+                                    <div class="specificDeprivationsSection collapse mt-3">
+                                        <div class="form-row">
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="incomeRankInput">Income</label>
+                                                <input type="number" class="form-control incomeRankInput"
+                                                       placeholder="" min="1" max="10">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="crimeRankInput">Crime</label>
+                                                <input type="number" class="form-control crimeRankInput"
+                                                       placeholder="" min="1" max="10">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="healthRankInput">Health</label>
+                                                <input type="number" class="form-control healthRankInput"
+                                                       placeholder="" min="1" max="10">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="educationRankInput">Education</label>
+                                                <input type="number" class="form-control educationRankInput"
+                                                       placeholder="" min="1" max="10">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="servicesRankInput">Access to services</label>
+                                                <input type="number" class="form-control servicesRankInput"
+                                                       placeholder="" min="1" max="10">
+                                            </div>
+
+                                            <div class="form-group col-12 col-xl-4">
+                                                <label for="environmentRankInput">Living Environment</label>
+                                                <input type="number" class="form-control environmentRankInput"
+                                                       placeholder="" min="1" max="10">
+                                            </div>
+
+                                            <div class="form-group col-12">
+                                                <small id="specificDeprivationsHelp" class="form-text text-muted">
+                                                    These are the specific statistics which combine to make the Combined
+                                                    Deprivation rank, above.<br/>
+                                                    These may be of interest if you wish to target an area specifically
+                                                    based on one particular statistic (e.g. Crime).<br/>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-outline-secondary btn-block adjustShapeToggleButton text-left mt-3"
+                                            type="button"
+                                            data-toggle="collapse"
+                                            data-target=".adjustShapeSection"
+                                            aria-expanded="false" aria-controls="adjustShapeSection">
+                                        + Adjust / Simplify Shape
+                                    </button>
+                                    <div class="adjustShapeSection collapse mt-3">
+                                        <div class="form-row">
+                                            <div class="form-group col-12 col-xl-6">
+                                                <label for="fallbackRadiusInput">Fallback Radius
+                                                    <small>(mi)</small></label>
+                                                <input type="number" class="form-control fallbackRadiusInput"
+                                                       placeholder="" min="0.01" step="0.01" value="1">
+                                                <small id="fallbackRadiusHelp" class="form-text text-muted">
+                                                    If no travel time options are set, fallback to this radius around
+                                                    target.
+                                                </small>
+                                            </div>
+                                            <div class="form-group col-12 col-xl-6">
+                                                <label for="maxRadiusInput">Max. Radius <small>(mi)</small></label>
+                                                <input type="number" class="form-control maxRadiusInput"
+                                                       placeholder="" step="0.01">
+                                                <small id="maxRadiusHelp" class="form-text text-muted">
+                                                    Limit resulting shape to those within bounding radius. May help
+                                                    filter out outliers.
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group col-12 col-xl-6">
+                                                <label for="minAreaRadiusInput">Min. Area <small>(deg)</small></label>
+                                                <input type="number" class="form-control minAreaRadiusInput"
+                                                       placeholder="" step="0.0000001" value="0.00001">
+                                                <small id="minAreaRadiusInputHelp" class="form-text text-muted">
+                                                    Exclude small, separated areas. May help filter out outliers.
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group col-12 col-xl-6">
+                                                <label for="simplifyFactorInput">Simplify <small>(deg)</small></label>
+                                                <input type="number" class="form-control simplifyFactorInput"
+                                                       placeholder="" max="0.1" step="0.00000001" value="0.0001">
+                                                <small id="simplifyFactorInputHelp" class="form-text text-muted">
+                                                    Simplify resulting shape (e.g. 0.01). May help shorten long property
+                                                    URL.
+                                                </small>
+                                            </div>
+                                            <div class="form-group col-12 col-xl-6">
+                                                <label for="bufferFactorInput">Buffer <small>(deg)</small></label>
+                                                <input type="number" class="form-control bufferFactorInput"
+                                                       placeholder="" max="0.1" step="0.00000001" value="0.0001">
+                                                <small id="bufferFactorInputHelp" class="form-text text-muted">
+                                                    Buffer resulting shape (e.g. 0.01). May help shorten long property
+                                                    URL.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row controlActionButtons">
+                    <div class="form-group col-12">
+                        <button type="button" class="btn btn-outline-primary btn-block" id="addTargetButton">
+                            Add Target
+                        </button>
+                    </div>
+                    <div class="form-group col-12">
+                        <button type="button" class="btn btn-outline-secondary btn-block" id="addTargetsFromClipboard">
+                            Add Targets from Clipboard
+                        </button>
+                    </div>
+                </div>
+                <div id="searchActionButtons" class="form-row controlActionButtons" style="display: none">
+                    <div class="form-group col-6">
+                        <button type="button" class="btn btn-outline-success btn-block" id="saveSearchButton">
+                            Save Search
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-block" id="saveSearchButtonLoading"
+                                style="display: none;" disabled>
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Saving...
+                        </button>
+                        <button type="button" class="btn btn-success btn-block" id="saveSearchButtonSaved"
+                                style="display: none;" disabled>
+                            ✓
+                        </button>
+                    </div>
+                    <div class="form-group col-6">
+                        <button type="button" class="btn btn-outline-danger btn-block" id="clearSearchButton">
+                            Clear Search
+                        </button>
+                    </div>
+                </div>
+                <div class="form-row controlActionButtons">
+                    <div class="form-group col-6">
+                        <button type="button" class="btn btn-outline-primary btn-block" id="loadLastSearchButton">
+                            Load Last Saved
+                        </button>
+                    </div>
+                    <div class="form-group col-6">
+                        <button type="button" class="btn btn-outline-secondary btn-block" id="manageSavedButton">
+                            Manage Saved
+                        </button>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-12">
+                        <button type="button" class="btn btn-success btn-block" id="generateButton">
+                            Generate Search Area
+                        </button>
+
+                        <button type="button" class="btn btn-secondary btn-block" id="generateButtonLoading"
+                                style="display: none;" disabled>
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Working...
+                        </button>
+
+                        <button type="button" class="btn btn-info btn-block" style="display: none" id="propertyButton">
+                            Build Property Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div id="footer-message" class="alert alert-info" role="alert">
+                <small class="text-muted">
+                    This is just an <a href="https://github.com/beveradb/home-area-helper">open source</a> hobby project
+                    by <a href="https://twitter.com/beveradb">@beveradb</a> based on public IMD data:
+                    (<a href="https://simd.scot" target="_blank">Scotland</a>,
+                    <a href="http://dclgapps.communities.gov.uk/imd/iod_index.html" target="_blank">England</a>)
+                    - it may be broken. Let me know your thoughts / suggestions!
+                </small>
+            </div>
+        </div>
+        <div id="map-container" class="col-12 col-lg-9">
+            <nav id="map-filter-menu"></nav>
+            <div id="map"></div>
+        </div>
+        <div class="modal fade" id="propertySearchModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="propertyModalTitle">Build Property Search</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="propertyModalBody">
+                        <form id="propertyParametersForm">
+                            <div class="form-row">
+                                <div class="form-group col-6">
+                                    <label for="rentOrBuyInput">Rent / Buy</label>
+                                    <select class="form-control" id="rentOrBuyInput"
+                                            aria-describedby="rentOrBuyInputHelp">
+                                        <option value="to-rent" selected>Rent</option>
+                                        <option value="for-sale">Buy</option>
+                                    </select>
+                                    <small id="rentOrBuyInputHelp" class="form-text text-muted"></small>
+                                </div>
+                                <div class="form-group col-6">
+                                    <label for="propertyTypeInput">Property Type</label>
+                                    <select class="form-control" id="propertyTypeInput"
+                                            aria-describedby="propertyTypeInputHelp">
+                                        <option value="property" selected>Any</option>
+                                        <option value="flats">Flats</option>
+                                        <option value="houses">Houses</option>
+                                    </select>
+                                    <small id="propertyTypeInputHelp" class="form-text text-muted"></small>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-12 col-xl-3">
+                                    <label for="minBedsInput">Min. Beds</label>
+                                    <input type="number" class="form-control" id="minBedsInput"
+                                           aria-describedby="minBedsInputHelp"
+                                           placeholder="" value="">
+                                </div>
+                                <div class="form-group col-12 col-xl-3">
+                                    <label for="maxBedsInput">Max. Beds</label>
+                                    <input type="number" class="form-control" id="maxBedsInput"
+                                           aria-describedby="maxBedsInputHelp"
+                                           placeholder="" value="">
+                                </div>
+                                <div class="form-group col-12 col-xl-3">
+                                    <label for="minPriceInput">Min. Price</label>
+                                    <input type="number" class="form-control" id="minPriceInput"
+                                           aria-describedby="minPriceInputHelp"
+                                           placeholder="" value="">
+                                </div>
+                                <div class="form-group col-12 col-xl-3">
+                                    <label for="maxPriceInput">Max. Price</label>
+                                    <input type="number" class="form-control" id="maxPriceInput"
+                                           aria-describedby="maxPriceInputHelp"
+                                           placeholder="" value="">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-12 col-xl-4">
+                                    <label for="sharedAccomodationInput">Include Shared Accommodation</label>
+                                    <select class="form-control" id="sharedAccomodationInput"
+                                            aria-describedby="sharedAccomodationInputHelp">
+                                        <option value="false" selected>No</option>
+                                        <option value="true">Yes</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-12 col-xl-4">
+                                    <label for="sharedOwnershipInput">Include Shared Ownership</label>
+                                    <select class="form-control" id="sharedOwnershipInput"
+                                            aria-describedby="sharedOwnershipInputHelp">
+                                        <option value="false" selected>No</option>
+                                        <option value="true">Yes</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-12 col-xl-4">
+                                    <label for="retirementHomesInput">Include Retirement Homes</label>
+                                    <select class="form-control" id="retirementHomesInput"
+                                            aria-describedby="retirementHomesInputHelp">
+                                        <option value="false" selected>No</option>
+                                        <option value="true">Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-12">
+                                    <label for="customKeywordsInput">Custom Search Keywords</label>
+                                    <input type="text" class="form-control" id="customKeywordsInput"
+                                           aria-describedby="customKeywordsInputHelp"
+                                           placeholder="">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="zooplaSearchButton">Search Zoopla</button>
+                        <button type="button" class="btn btn-primary" id="rightmoveSearchButton">Search Rightmove
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="messageModalTitle"></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="messageModalBody"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    mapboxgl.accessToken = "{{MAPBOX_ACCESS_TOKEN}}";
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [-3.585802, 54.549803],
+        zoom: 5
+    });
+
+    map.on('load', function () {
+        map_loaded(map)
+    });
+</script>
+</body>
+</html>

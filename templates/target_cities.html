@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset='utf-8'/>
+    <title>Target Cities Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+
+    <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'
+          integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'/>
+    <link rel='stylesheet' href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.css'/>
+    <link rel='stylesheet' href='{{ url_for('static', filename='shared.css') }}'/>
+
+    <script
+            src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mapbox/polyline@1.1.0/src/polyline.min.js"></script>
+
+    <script src='{{ url_for('static', filename='shared.js') }}'></script>
+    <script src='{{ url_for('static', filename='target_cities.js') }}'></script>
+</head>
+<body>
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <div id="controls" class="col-12 col-lg-3">
+            <div class="jumbotron">
+                <h1>Target Cities Tool</h1>
+                <p class="lead">Identify cities for property search, based on census data.</p>
+                <small>Found the perfect cities? Try our <a href="/">Home Area</a> tool!</small>
+            </div>
+
+            <form id="findTargetCitiesForm">
+
+                <div class="form-row">
+                    <div class="form-group col-12">
+                        <label for="countryCodeInput">Country</label>
+                        <select id="countryCodeInput" class="form-control" required>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-12">
+                        <label for="minPopulationInput">Minimum Population</label>
+                        <input id="minPopulationInput" type="number" class="form-control" min="0" step="1">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-12">
+                        <button type="button" class="btn btn-success btn-block" id="findButton">
+                            Find Cities
+                        </button>
+
+                        <button type="button" class="btn btn-secondary btn-block" id="findButtonLoading"
+                                style="display: none;" disabled>
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Working...
+                        </button>
+                    </div>
+                </div>
+
+                <div id="searchActionButtons" class="form-row controlActionButtons" style="display: none">
+                    <div class="form-group col-12">
+                        <button type="button" class="btn btn-primary btn-block" id="copyToClipboardButton">
+                            Copy List to Clipboard
+                        </button>
+                    </div>
+
+                    <div class="form-group col-12">
+                        <button type="button" class="btn btn-outline-danger btn-block" id="clearSearchButton">
+                            Clear Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div id="footer-message" class="alert alert-info" role="alert">
+                <small class="text-muted">
+                    This is just an <a href="https://github.com/beveradb/home-area-helper">open source</a> hobby project
+                    by <a href="https://twitter.com/beveradb">@beveradb</a> based on public IMD data:
+                    (<a href="https://simd.scot" target="_blank">Scotland</a>,
+                    <a href="http://dclgapps.communities.gov.uk/imd/iod_index.html" target="_blank">England</a>)
+                    - it may be broken. Let me know your thoughts / suggestions!
+                </small>
+            </div>
+        </div>
+
+        <div id="map-container" class="col-12 col-lg-9">
+            <nav id="map-filter-menu"></nav>
+            <div id="map"></div>
+        </div>
+
+        <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="messageModalTitle"></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="messageModalBody"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    mapboxgl.accessToken = "{{MAPBOX_ACCESS_TOKEN}}";
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [-3.585802, 54.549803],
+        zoom: 5
+    });
+
+    map.on('load', function () {
+        map_loaded(map)
+    });
+</script>
+</body>
+</html>
