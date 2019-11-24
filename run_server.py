@@ -23,9 +23,10 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logging.getLogger().setLevel(logging.DEBUG if app_debug else logging.INFO)
 
 # Download dataset files and pre-seeded API call / compute cache to reduce slug size
-preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.6/', [
+preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0.7/', [
     {'dir': 'datasets/uk/', 'file': 'uk-wgs84-imd-shapefiles.zip'},
     {'dir': 'datasets/europe/', 'file': 'eurostat-cities-2019.zip'},
+    {'dir': 'caches/', 'file': 'api_cache.sqlite.zip'},
     {'dir': 'caches/', 'file': 'requests_cache.sqlite.zip'},
     {'dir': 'caches/', 'file': 'static_cache.sqlite'},
 ])
