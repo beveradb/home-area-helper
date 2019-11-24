@@ -5,28 +5,83 @@ import logging
 import pandas as pd
 from shapely.geometry import mapping
 
+from run_server import transient_cache, static_cache
 from src import google_maps
 from src.multi_polygons import get_bounding_circle_for_point, join_multi_to_single_poly
 from src.utils import timeit
 
 
+@transient_cache.cached()
 def get_target_cities(params: dict):
-    city_center_coords = google_maps.get_centre_point_lng_lat_for_address(
-        str(params['countryInput'])
-    )
+    target_cities_result = []
 
-    city_polygon = get_bounding_circle_for_point(city_center_coords, 2)
+    country_code = str(params['countryCodeInput'])
+    target_cities = get_country_cities_combined_data(country_code)
 
+    for target_city in target_cities:
+        # Filter by arbitrary user-given params
+        if params['minPopulationInput']:
+            if int(target_city['Population']["Population on the 1st of January, total"]) < int(
+                    params['minPopulationInput']):
+                continue
+
+        city_center_coords = google_maps.get_centre_point_lng_lat_for_address(
+            target_city['Name'] + ', ' + country_code
+        )
+
+        if city_center_coords is not None:
+            city_polygon = get_bounding_circle_for_point(city_center_coords, 2)
+
+            target_cities_result.append({
+                'label': target_city['Name'],
+                'coords': city_center_coords,
+                'polygon': city_polygon,
+                'data': target_city
+            })
+
+    return target_cities_result
+
+
+@static_cache.cached()
+def get_eurostat_countries():
     return [
-        {
-            'label': str(params['countryInput']),
-            'coords': city_center_coords,
-            'polygon': city_polygon
-        }
+        {"code": "AT", "label": "Austria"},
+        {"code": "BE", "label": "Belgium"},
+        {"code": "BG", "label": "Bulgaria"},
+        {"code": "CH", "label": "Switzerland"},
+        {"code": "CY", "label": "Cyprus"},
+        {"code": "CZ", "label": "Czech Republic"},
+        {"code": "DE", "label": "Germany"},
+        {"code": "DK", "label": "Denmark"},
+        {"code": "EE", "label": "Estonia"},
+        {"code": "EL", "label": "Greece"},
+        {"code": "ES", "label": "Spain"},
+        {"code": "FI", "label": "Finland"},
+        {"code": "FR", "label": "France"},
+        {"code": "HR", "label": "Croatia"},
+        {"code": "HU", "label": "Hungary"},
+        {"code": "IE", "label": "Ireland"},
+        {"code": "IS", "label": "Iceland"},
+        {"code": "IT", "label": "Italy"},
+        {"code": "LT", "label": "Lithuania"},
+        {"code": "LU", "label": "Luxembourg"},
+        {"code": "LV", "label": "Latvia"},
+        {"code": "MT", "label": "Malta"},
+        {"code": "NL", "label": "Netherlands"},
+        {"code": "NO", "label": "Norway"},
+        {"code": "PL", "label": "Poland"},
+        {"code": "PT", "label": "Portugal"},
+        {"code": "RO", "label": "Romania"},
+        {"code": "SE", "label": "Sweden"},
+        {"code": "SI", "label": "Slovenia"},
+        {"code": "SK", "label": "Slovakia"},
+        {"code": "TR", "label": "Turkey"},
+        {"code": "UK", "label": "United Kingdom"}
     ]
 
 
-def get_filtered_cities_combined_data_dict(country):
+@static_cache.cached()
+def load_eurostat_metadata():
     eurostat_data_dir = 'datasets/europe/eurostat-cities-2019/'
 
     eurostat_meta_df = {
@@ -37,6 +92,19 @@ def get_filtered_cities_combined_data_dict(country):
         'Perception Indicators': pd.read_csv(eurostat_data_dir + 'urb_percep_indicators.tsv', sep='\t', header=None,
                                              names=['Code', 'Label']),
     }
+
+    # Columns:
+    # List of cities: ["CODE", "NAME"]
+    # Indicator list: ["CODE", "LABEL", "indicator calculation nominator", "indicator calculation denominator"]
+    # Validation rules: ["Rule name", "New Rule Name",…]
+    # Variable list: ["Domain", "Code", "Label", "To be collected by NSI included in Annex A of Grants 2014/2015",…]
+
+    return eurostat_meta_df
+
+
+@static_cache.cached()
+def load_eurostat_data():
+    eurostat_data_dir = 'datasets/europe/eurostat-cities-2019/'
 
     eurostat_df = {
         'Economy and finance':
@@ -72,11 +140,6 @@ def get_filtered_cities_combined_data_dict(country):
     }
 
     # Columns:
-    # List of cities: ["CODE", "NAME"]
-    # Indicator list: ["CODE", "LABEL", "indicator calculation nominator", "indicator calculation denominator"]
-    # Validation rules: ["Rule name", "New Rule Name",…]
-    # Variable list: ["Domain", "Code", "Label", "To be collected by NSI included in Annex A of Grants 2014/2015",…]
-    #
     # Culture and tourism: ["indic_ur,cities\time", "2019 ", "2018 ", "2017 ", "2016 ", "2015 ", "2014 ", "2013 " ...]
     # Economy and finance: ["indic_ur,cities\time", "2018 ", "2017 ", "2016 ", "2015 ", "2014 ", "2013 ", "2012 "...]
     # Education: ["indic_ur,cities\time", "2019 ", "2018 ", "2017 ", "2016 ", "2015 ", "2014 ", "2013 ", "2012 " ...]
@@ -87,6 +150,14 @@ def get_filtered_cities_combined_data_dict(country):
     # Perception survey: ["indic_ur,unit,cities\time", "2015 ", "2012 ", "2009 ", "2006 ", "2004 "]
     # Population: ["indic_ur,cities\time", "2019 ", "2018 ", "2017 ", "2016 ", "2015 " ...]
     # Transport: ["indic_ur,cities\time", "2019 ", "2018 ", "2017 ", "2016 ", "2015 ", "2014 ", "2013 ", "2012 " ...]
+
+    return eurostat_df
+
+
+@static_cache.cached()
+def get_country_cities_combined_data(country):
+    eurostat_meta_df = load_eurostat_metadata()
+    eurostat_df = load_eurostat_data()
 
     # Example CODE value for a UK city: UK007C1
     city_code_regex = '^' + country + '[0-9]+C[0-9]+$'
@@ -141,10 +212,26 @@ def get_filtered_cities_combined_data_dict(country):
 
         result_cities_list.append(single_city_data)
 
-    return json.dumps(result_cities_list)
+    # Result object shape:
+    # [
+    #   {
+    #       "Code": "UK002C1",
+    #       "Name": "Birmingham",
+    #       "Economy and finance": {
+    #           "All companies": "34565 d"
+    #       },
+    #       "Population": {
+    #           "Population on the 1st of January, total": "515855 "
+    #       }
+    #       ...
+    #   }
+    # ]
+
+    return result_cities_list
 
 
 @timeit
+@transient_cache.cached()
 def get_target_cities_data_json(params: dict):
     response_object = {
         'targets_results': [],
@@ -158,7 +245,9 @@ def get_target_cities_data_json(params: dict):
         response_object['targets_results'].append({
             'target': {
                 'label': target_city['label'],
-                'coords': target_city['coords']
+                'coords': target_city['coords'],
+                'polygon': mapping(target_city['polygon']),
+                'data': target_city['data']
             }
         })
         target_cities_polygons.append(target_city['polygon'])
@@ -170,8 +259,7 @@ def get_target_cities_data_json(params: dict):
         response_object['results_combined'] = {
             'label': 'All Cities Combined',
             'bounds': joined_cities.bounds,
-            'centroid': mapping(joined_cities.centroid)['coordinates'],
-            'polygon': mapping(joined_cities)
+            'centroid': mapping(joined_cities.centroid)['coordinates']
         }
 
     return json.dumps(response_object)

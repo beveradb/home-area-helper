@@ -29,17 +29,23 @@
         <div id="controls" class="col-12 col-lg-3">
             <div class="jumbotron">
                 <h1>Target Cities Tool</h1>
-                <p class="lead">Identify cities for property search, based on
-                    <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a> census data.</p>
-                <small>Found the perfect city? Try our <a href="/">Home Area</a> tool there!</small>
+                <p class="lead">Identify cities for property search, based on census data.</p>
+                <small>Found the perfect cities? Try our <a href="/">Home Area</a> tool!</small>
             </div>
 
             <form id="findTargetCitiesForm">
 
                 <div class="form-row">
                     <div class="form-group col-12">
-                        <label for="countryInput">Country</label>
-                        <input id="countryInput" type="text" class="form-control" value="UK" required>
+                        <label for="countryCodeInput">Country</label>
+                        <select id="countryCodeInput" class="form-control" required>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-12">
+                        <label for="minPopulationInput">Minimum Population</label>
+                        <input id="minPopulationInput" type="number" class="form-control" min="0" step="1">
                     </div>
                 </div>
 
@@ -53,6 +59,20 @@
                                 style="display: none;" disabled>
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             Working...
+                        </button>
+                    </div>
+                </div>
+
+                <div id="searchActionButtons" class="form-row controlActionButtons" style="display: none">
+                    <div class="form-group col-12">
+                        <button type="button" class="btn btn-primary btn-block" id="copyToClipboardButton">
+                            Copy List to Clipboard
+                        </button>
+                    </div>
+
+                    <div class="form-group col-12">
+                        <button type="button" class="btn btn-outline-danger btn-block" id="clearSearchButton">
+                            Clear Search
                         </button>
                     </div>
                 </div>

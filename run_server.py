@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import logging
 import os
 
@@ -33,6 +34,10 @@ preload_files('https://github.com/beveradb/home-area-helper/releases/download/v0
 requests_cache = requests_cache.core.CachedSession(
     cache_name='caches/requests_cache', backend="sqlite", allowable_methods=('GET', 'POST'))
 
+# Set up disk caching for API calls which are made through a 3rd party library rather than the requests library
+api_cache = ucache.SqliteCache(
+    filename='caches/api_cache.sqlite', cache_size=5000, timeout=32000000, compression=True)
+
 # Set up disk caching for complex computations which should not need to change -
 static_cache = ucache.SqliteCache(
     filename='caches/static_cache.sqlite', cache_size=5000, timeout=32000000, compression=True)
@@ -64,6 +69,13 @@ def target_cities_request():
     )
 
 
+@app.route('/eurostat_countries')
+def eurostat_country_codes():
+    from src import target_cities
+    results = json.dumps(target_cities.get_eurostat_countries())
+    return Response(results, mimetype='application/json')
+
+
 @app.route('/target_cities', methods=['POST'])
 def target_cities_json():
     req_data = request.get_json()
@@ -79,11 +91,10 @@ def target_cities_json():
 
 @app.route('/eurostat_testing/<string:country>', methods=['GET'])
 def eurostat_testing(country):
-    req_data = request.get_json()
     logging.log(logging.INFO, "Target eurostat received: " + str(country))
 
     from src import target_cities
-    results = target_cities.get_filtered_cities_combined_data_dict(country)
+    results = target_cities.get_country_cities_combined_data(country)
 
     return Response(results, mimetype='application/json')
 
