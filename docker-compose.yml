@@ -1,0 +1,22 @@
+version: "3.3"
+
+services:
+
+  homeareainfo:
+    image: "homeareainfo"
+    container_name: "homeareainfo"
+    environment:
+      - MAPBOX_ACCESS_TOKEN
+      - TRAVELTIME_API_KEY
+      - TRAVELTIME_APP_ID
+      - GMAPS_API_KEY
+      - HOMEAREA_DEBUG
+    volumes:
+      - /tmp/hah-datasets:/app/datasets
+      - /tmp/hah-caches:/app/caches
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homeareainfo.rule=Host(`homearea.info`)"
+      - "traefik.http.routers.homeareainfo.entrypoints=websecure"
+      - "traefik.http.routers.homeareainfo.tls.certresolver=mytlschallenge"
+
