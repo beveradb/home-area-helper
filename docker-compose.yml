@@ -3,14 +3,13 @@ version: "3.3"
 services:
 
   homeareainfo:
-    image: "homeareainfo"
+    image: "beveradb/homeareainfo:latest"
     container_name: "homeareainfo"
-    environment:
-      - MAPBOX_ACCESS_TOKEN
-      - TRAVELTIME_API_KEY
-      - TRAVELTIME_APP_ID
-      - GMAPS_API_KEY
-      - HOMEAREA_DEBUG
+    restart: always
+    ports:
+      - 8080:80
+    env_file:
+      - .env
     volumes:
       - /tmp/hah-datasets:/app/datasets
       - /tmp/hah-caches:/app/caches
